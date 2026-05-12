@@ -28,7 +28,7 @@ This project provides:
 - `firewalld` and `firewall-cmd`
 - Systemd for controlling the Squid service
 
-## Required System Packages
+## Install dependencies
 dnf install epel-release -y
 dnf install python3 python3-pip python3-devel gcc httpd-tools certbot firewalld openssl -y
 
