@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AlfaCore - Firewall</title>
+    <style>
+        /* Shared CSS from proxy.html above */
+        :root { --bg: #020617; --sidebar: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --muted: #64748b; --green: #10b981; --red: #f43f5e; --line: rgba(255, 255, 255, 0.05); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--line); padding: 40px 24px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .logo { font-size: 24px; font-weight: 800; margin-bottom: 40px; color: white; text-decoration: none; display: flex; align-items: center; gap: 12px; }
+        .logo span { color: var(--accent); }
+        .nav-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
+        .nav-link { color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; font-size: 14px; margin-bottom: 8px; transition: 0.2s; }
+        .nav-link:hover { background: var(--line); color: var(--accent); }
+        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.15); }
+        .content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--line); margin-bottom: 25px; }
+        .title { font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; }
+        .btn { padding: 10px 18px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-blue { background: var(--accent); } .btn-red { background: var(--red); }
+        input { width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 12px; border-radius: 10px; margin-bottom: 12px; outline: none; }
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .pill-green { background: rgba(16, 185, 129, 0.1); color: var(--green); }
+        .pill-red { background: rgba(244, 63, 94, 0.1); color: var(--red); }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <a href="/" class="logo">ALFA<span>CORE</span></a>
+    <span class="nav-label">Main Console</span>
+    <a href="/" class="nav-link">Dashboard</a>
+    <span class="nav-label" style="margin-top:20px;">Services</span>
+    <a href="/proxy" class="nav-link">Proxy Server</a>
+    <a href="/firewall" class="nav-link active">Firewall</a>
+    <a href="/logs" class="nav-link">Access Logs</a>
+    <a href="/network" class="nav-link">Networks</a>
+    <a href="/vpns" class="nav-link">VPNs</a>
+    <div style="margin-top:auto;"><a href="/logout" class="nav-link" style="color:var(--red)">Logout</a></div>
+</div>
+
+<div class="content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+        <h2 style="font-size:24px;">Security & Firewall</h2>
+        <span class="status-pill {{ 'pill-green' if fw_active else 'pill-red' }}">
+            Shield Status: {{ 'Protected' if fw_active else 'Unprotected' }}
+        </span>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+        <div class="card">
+            <div class="title">Global Firewall Control</div>
+            <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">Enable or Disable the system-wide firewall service. Disabling will expose all ports.</p>
+            <form action="/manage-firewall" method="post" style="display:flex; gap:10px;">
+                <button type="submit" name="action" value="start" class="btn btn-blue" style="flex:1">Enable Protection</button>
+                <button type="submit" name="action" value="stop" class="btn btn-red" style="flex:1">Disable Firewall</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="title">Port Management</div>
+            <form action="/firewall-port" method="post">
+                <input type="text" name="port" placeholder="Enter Port Number (e.g. 3128)" required>
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" name="action" value="add" class="btn btn-blue" style="flex:1">Open Port</button>
+                    <button type="submit" name="action" value="remove" class="btn btn-red" style="flex:1">Close Port</button>
+                </div>
+            </form>
+            <div style="margin-top:30px;">
+                <span class="nav-label">ACTIVE OPEN PORTS</span>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    {% for p in open_ports %}
+                    <span style="background:var(--bg); padding:8px 14px; border-radius:12px; font-size:13px; border:1px solid var(--line); font-family:monospace;">{{ p }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
