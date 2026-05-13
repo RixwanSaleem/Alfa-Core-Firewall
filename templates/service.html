@@ -25,11 +25,12 @@
         .btn-red { background: var(--red); }
         .btn-green { background: var(--green); }
         .btn-gray { background: #1f2937; }
+        .btn-small { padding: 8px 14px; font-size: 12px; border-radius: 8px; }
+        .btn-icon { padding: 8px; width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
         input[type="text"], input[type="password"] { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--text); font-size: 14px; margin-right: 8px; }
         .user-item { background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-left: 3px solid var(--accent); }
         .user-name { font-weight: 600; }
         .user-actions { display: flex; gap: 8px; }
-        .btn-small { padding: 6px 12px; font-size: 12px; }
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
     </style>
@@ -64,6 +65,12 @@
                 <button type="submit" class="btn btn-green">Install</button>
             </form>
             {% else %}
+            {% if not active %}
+            <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
+                <input type="hidden" name="action" value="start">
+                <button type="submit" class="btn btn-green btn-small">Start</button>
+            </form>
+            {% endif %}
             <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
                 <input type="hidden" name="action" value="uninstall">
                 <button type="submit" class="btn btn-red">Uninstall</button>
@@ -72,7 +79,6 @@
                 <input type="hidden" name="action" value="restart">
                 <button type="submit" class="btn btn-blue">Restart</button>
             </form>
-            {% endif %}
             <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
                 <input type="hidden" name="action" value="enable">
                 <button type="submit" class="btn btn-green">Enable</button>
@@ -81,34 +87,60 @@
                 <input type="hidden" name="action" value="disable">
                 <button type="submit" class="btn btn-gray">Disable</button>
             </form>
+            {% endif %}
+            {% if service_key in ['ocserv', 'ipsec', 'ssl', 'ssh', 'vpn', 'dhcp-server', 'ethernet'] %}
+            <a href="/service/{{ service_key }}/config" class="btn btn-icon btn-blue" title="Edit Configuration" style="font-size: 18px;">⚙️</a>
+            {% endif %}
         </div>
     </div>
     {% if service_key == 'ocserv' and installed %}
     <div class="card">
         <div style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">👥 User Management</div>
-        {% if ocserv_users %}
         <div style="margin-bottom: 24px;">
-            <div style="color: var(--muted); font-size: 12px; margin-bottom: 12px; text-transform: uppercase;">Current Users</div>
+            <div style="color: var(--muted); font-size: 12px; margin-bottom: 12px; text-transform: uppercase;">
+                Connected Sessions • {{ ocserv_connections|length if ocserv_connections else 0 }}
+            </div>
+            {% if ocserv_connections %}
+            {% for conn in ocserv_connections %}
+            <div class="user-item">
+                <span class="user-name">{{ conn }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="color: var(--muted); font-style: italic;">No connected users.</p>
+            {% endif %}
+        </div>
+        <div style="margin-bottom: 24px;">
+            <div style="color: var(--muted); font-size: 12px; margin-bottom: 12px; text-transform: uppercase;">
+                Current Users • {{ ocserv_users|length if ocserv_users else 0 }}
+            </div>
+            {% if ocserv_users %}
             {% for user in ocserv_users %}
             <div class="user-item">
                 <span class="user-name">{{ user }}</span>
                 <div class="user-actions">
-                    <form action="/ocserv-user" method="post" style="display:inline-block;">
-                        <input type="hidden" name="action" value="reset">
-                        <input type="hidden" name="username" value="{{ user }}">
-                        <input type="password" name="password" placeholder="New password" required style="max-width: 150px;">
-                        <button type="submit" class="btn btn-blue btn-small">Reset Password</button>
-                    </form>
+                    <button type="button" class="btn btn-blue btn-small" onclick="showResetForm('{{ user }}')">Reset Password</button>
                     <form action="/ocserv-user" method="post" style="display:inline-block;" onsubmit="return confirm('Delete user {{ user }}?');">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="username" value="{{ user }}">
                         <button type="submit" class="btn btn-red btn-small">Delete</button>
                     </form>
                 </div>
+                <div id="reset-form-{{ user }}" style="display: none; margin-top: 10px;">
+                    <form action="/ocserv-user" method="post" style="display: flex; gap: 8px; align-items: center;">
+                        <input type="hidden" name="action" value="reset">
+                        <input type="hidden" name="username" value="{{ user }}">
+                        <input type="password" name="password" placeholder="New password" required style="flex: 1;">
+                        <button type="submit" class="btn btn-green btn-small">Update</button>
+                        <button type="button" class="btn btn-gray btn-small" onclick="hideResetForm('{{ user }}')">Cancel</button>
+                    </form>
+                </div>
             </div>
             {% endfor %}
+            {% else %}
+            <p style="color: var(--muted); font-style: italic;">No users created yet.</p>
+            {% endif %}
         </div>
-        {% endif %}
         <div style="border-top: 1px solid var(--line); padding-top: 20px;">
             <div style="color: var(--muted); font-size: 12px; margin-bottom: 12px; text-transform: uppercase;">Create New User</div>
             <form action="/ocserv-user" method="post">
@@ -127,5 +159,13 @@
     </div>
     {% endif %}
 </div>
+<script>
+function showResetForm(username) {
+    document.getElementById('reset-form-' + username).style.display = 'block';
+}
+function hideResetForm(username) {
+    document.getElementById('reset-form-' + username).style.display = 'none';
+}
+</script>
 </body>
 </html>
