@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AlfaCore - Administration</title>
+    <style>
+        :root { --bg: #020617; --sidebar: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --muted: #64748b; --green: #10b981; --red: #f43f5e; --line: rgba(255, 255, 255, 0.05); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--line); padding: 40px 24px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .logo { font-size: 24px; font-weight: 800; margin-bottom: 40px; color: white; text-decoration: none; display: block; }
+        .nav-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
+        .nav-link { color: var(--text); text-decoration: none; padding: 12px 16px; border-radius: 12px; font-size: 14px; margin-bottom: 8px; display: block; }
+        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.15); }
+        .content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+        .page-title { font-size: 28px; margin-bottom: 14px; }
+        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--line); margin-bottom: 25px; }
+        .field { color: var(--muted); margin-bottom: 10px; }
+        .btn { padding: 12px 18px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; color: white; font-size: 14px; }
+        .btn-blue { background: var(--accent); }
+        .btn-green { background: var(--green); }
+        .btn-red { background: var(--red); }
+        .btn-gray { background: #1f2937; }
+        .btn-small { padding: 8px 12px; font-size: 12px; }
+        .btn:hover { opacity: 0.9; }
+        input[type="text"], input[type="password"] { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--text); font-size: 14px; width: 100%; margin-bottom: 12px; }
+        .alert { padding: 12px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; }
+        .alert-success { background: rgba(16, 185, 129, 0.15); color: var(--green); border-left: 3px solid var(--green); }
+        .alert-error { background: rgba(244, 63, 94, 0.15); color: var(--red); border-left: 3px solid var(--red); }
+        .section { margin-bottom: 30px; }
+        .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--accent); }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+        .backup-item { background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; border-left: 3px solid var(--accent); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .backup-info { flex-grow: 1; }
+        .backup-name { font-weight: 600; font-family: 'Monaco', monospace; font-size: 13px; }
+        .backup-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+        .backup-actions { display: flex; gap: 8px; }
+        .divider { border-top: 1px solid var(--line); margin: 30px 0; padding-top: 30px; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <a href="/" class="logo">ALFA<span>CORE</span></a>
+    <span class="nav-label">Main Console</span>
+    <a href="/" class="nav-link">Dashboard</a>
+    <span class="nav-label" style="margin-top:20px;">Services</span>
+    <a href="/proxy" class="nav-link">Proxy Server</a>
+    <a href="/firewall" class="nav-link">Firewall</a>
+    <a href="/logs" class="nav-link">Access Logs</a>
+    <a href="/network" class="nav-link">Networks</a>
+    <a href="/vpns" class="nav-link">VPNs</a>
+    <span class="nav-label" style="margin-top:20px;">System</span>
+    <a href="/system" class="nav-link">System Settings</a>
+    <a href="/admin" class="nav-link active">Administration</a>
+    <div style="margin-top:auto;"><a href="/logout" class="nav-link" style="color:var(--red)">Logout</a></div>
+</div>
+<div class="content">
+    <div class="page-title">🔐 Administration</div>
+    
+    {% if request.query_params.get('success') == 'password_changed' %}
+    <div class="alert alert-success">✓ Admin password has been changed successfully</div>
+    {% endif %}
+    {% if request.query_params.get('success') == 'backup_created' %}
+    <div class="alert alert-success">✓ Backup created successfully</div>
+    {% endif %}
+    {% if request.query_params.get('success') == 'backup_deleted' %}
+    <div class="alert alert-success">✓ Backup deleted successfully</div>
+    {% endif %}
+    
+    {% if request.query_params.get('error') == 'invalid_password' %}
+    <div class="alert alert-error">✗ Current password is incorrect</div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'passwords_not_match' %}
+    <div class="alert alert-error">✗ New passwords do not match</div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'password_too_short' %}
+    <div class="alert alert-error">✗ Password must be at least 8 characters long</div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'write_failed' %}
+    <div class="alert alert-error">✗ Failed to update configuration file</div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'backup_failed' %}
+    <div class="alert alert-error">✗ Failed to create backup</div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'delete_failed' %}
+    <div class="alert alert-error">✗ Failed to delete backup</div>
+    {% endif %}
+    
+    <!-- Change Admin Password -->
+    <div class="card">
+        <div class="section-title">🔑 Change Admin Password</div>
+        <form action="/admin/change-password" method="post">
+            <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" name="current_password" required>
+            </div>
+            <div class="form-group">
+                <label>New Password (minimum 8 characters)</label>
+                <input type="password" name="new_password" required minlength="8">
+            </div>
+            <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" name="confirm_password" required minlength="8">
+            </div>
+            <button type="submit" class="btn btn-green">Update Password</button>
+        </form>
+    </div>
+    
+    <!-- Backup and Restore -->
+    <div class="card">
+        <div class="section-title">💾 Backup & Restore</div>
+        
+        <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line);">
+            <p class="field">Create a backup of all important configuration files.</p>
+            <form action="/admin/create-backup" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-green">Create Backup Now</button>
+            </form>
+        </div>
+        
+        <div>
+            <div class="section-title" style="margin-top: 0;">Available Backups ({{ backup_count }})</div>
+            
+            {% if backups %}
+                {% for backup in backups %}
+                <div class="backup-item">
+                    <div class="backup-info">
+                        <div class="backup-name">{{ backup.name }}</div>
+                        <div class="backup-meta">{{ backup.date }} • {{ backup.size }}</div>
+                    </div>
+                    <div class="backup-actions">
+                        <a href="/admin/download-backup/{{ backup.name }}" class="btn btn-blue btn-small">Download</a>
+                        <form action="/admin/delete-backup" method="post" style="display:inline;">
+                            <input type="hidden" name="backup_name" value="{{ backup.name }}">
+                            <button type="submit" class="btn btn-red btn-small" onclick="return confirm('Delete this backup?')">Delete</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: var(--muted); text-align: center; padding: 20px;">No backups available. Create one now to get started.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- System Information -->
+    <div class="card">
+        <div class="section-title">ℹ️ System Information</div>
+        <p class="field">System Uptime: <strong>{{ uptime }}</strong></p>
+        <p class="field">Load Average: <strong>{{ load }}</strong></p>
+        <p class="field">Firewall Status: <strong>{{ 'Active' if fw_active else 'Inactive' }}</strong></p>
+        <p class="field">Squid Proxy: <strong>{{ 'Active' if squid_active else 'Inactive' }}</strong></p>
+    </div>
+</div>
+</body>
+</html>
