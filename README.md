@@ -1,148 +1,405 @@
-# Web Based Basic Firewall
+# AlfaCore - Firewall Panel Administration UI
 
-A small FastAPI-based administration UI for managing Squid proxy service and firewall rules on a Linux host.
+A comprehensive FastAPI-based web administration interface for managing network services including Squid proxy, firewall rules, VPN services, and system settings on a Linux host.
 
 ## Project Overview
 
-This project provides:
+AlfaCore Squid Panel provides a modern, user-friendly dashboard for managing:
 
-- Login page for administrator authentication
-- Dashboard showing Firwall panel installation and service status
-- Controls to install, start, stop, restart, and uninstall easy to manage firewall
-- Firewall port management using `firewall-cmd`
+### Core Services
+- **Proxy Server** - Squid proxy configuration, user management, and traffic control
+- **Firewall** - Port management and firewall rule configuration using `firewall-cmd`
+- **Networks** - Ethernet and DHCP server management
+- **VPNs** - Multiple VPN protocol support (OpenConnect, IPSec, SSL/TLS, SSH, OpenVPN)
+- **Access Logs** - Real-time proxy access log monitoring
+- **System Settings** - Package management, system updates, and package search
+- **Administration** - User management, password changes, configuration backups
 
+### Key Features
+- 🔐 Secure session-based authentication with auto-logout (10 minutes)
+- 📊 Real-time system status and service monitoring
+- 🔧 Service installation, configuration, and lifecycle management
+- 📦 DNF package management with search and install capabilities
+- 💾 Automatic backup and restore of critical configurations
+- 📝 Configuration file editing with live previews
+- 🎨 Modern dark-themed responsive UI
+- 👥 User management for OCSERV VPN and proxy services
 
-## Files
+## Project Structure
 
-- `main.py` - FastAPI application logic
-- `templates/login.html` - login page template
-- `templates/dashboard.html` - admin dashboard template
-- `var/` - included folder in repository (unused by current app)
+```
+squid-panel/
+├── python_squid_admin/
+│   ├── main.py                 # FastAPI application with all endpoints
+│   ├── requirements.txt         # Python package dependencies
+│   ├── README.md                # This file
+│   ├── templates/               # Jinja2 HTML templates
+│   │   ├── login.html           # Login page
+│   │   ├── dashboard.html       # Main dashboard
+│   │   ├── proxy.html           # Squid proxy management
+│   │   ├── firewall.html        # Firewall configuration
+│   │   ├── networks.html        # Network services
+│   │   ├── vpns.html            # VPN services
+│   │   ├── logs.html            # Access logs viewer
+│   │   ├── service.html         # Individual service management
+│   │   ├── config.html          # Configuration editor
+│   │   ├── system.html          # System settings & package management
+│   │   └── admin.html           # Administration panel
+│   └── var/                     # Reserved for future use
+└── systemd/
+    └── squid-panel.service      # Systemd service configuration
+```
 
-## Requirements
+## System Requirements
 
-- Python 3.9+
-- FastAPI
-- Uvicorn or another ASGI server
-- `squid` package managed via `dnf`
-- `firewalld` and `firewall-cmd`
-- Systemd for controlling the Squid service
+- **OS**: Fedora/RHEL/CentOS with systemd
+- **Python**: 3.9 or higher
+- **Root Access**: Required for service and firewall management
+- **System Packages**:
+  - `python3` and `python3-pip`
+  - `firewalld` (for firewall management)
+  - `squid` (optional, can be installed via UI)
+  - `ocserv` (optional, for OpenConnect VPN)
+  - `openssl` (for certificate generation)
 
-## Install dependencies
-dnf install epel-release -y
-dnf install python3 python3-pip python3-devel gcc httpd-tools certbot firewalld openssl -y
+## Prerequisites Installation
 
-## Activate your venv first, then run:
-pip install fastapi uvicorn[standard] jinja2 python-multipart itsdangerous starlette
-
-## Environment Variables
-
-The application reads these environment variables:
-
-- `SESSION_SECRET` - secret key for session middleware
-- `ADMIN_USER` - admin login username (default: `admin`)
-- `ADMIN_PASS` - admin login password (default: `password`)
-
-> Important: for production, set a strong `SESSION_SECRET` and do not use default credentials.
-
-## Running the Application
-
-Install Python dependencies if needed:
+Install required system packages:
 
 ```bash
-python -m pip install fastapi uvicorn
+sudo dnf install epel-release -y
+sudo dnf install python3 python3-pip python3-devel gcc httpd-tools certbot firewalld openssl -y
+sudo systemctl enable --now firewalld
 ```
 
-Start the app:
+## Installation
+
+### 1. Create Project Directory
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8444
+sudo mkdir -p /opt/squid-panel/python_squid_admin
+sudo cd /opt/squid-panel/python_squid_admin
 ```
 
-Then open:
+### 2. Set Up Python Virtual Environment
 
-```text
-http://localhost:8444/login
+```bash
+sudo python3 -m venv venv
+sudo source venv/bin/activate
 ```
 
-## Usage
+### 3. Install Python Dependencies
 
-1. Log in with the configured admin credentials.
-2. Use the dashboard to view Squid status and installed state.
-3. Install Squid if not already installed.
-4. Start, stop, or restart the Squid service.
-5. Add or remove firewall ports.
-6. Edit and save `/etc/squid/squid.conf` directly from the dashboard.
+```bash
+sudo pip install -r requirements.txt
+```
 
-## Security Notes
+## Configuration
 
-- The app uses a simple session-based login and stores credentials in environment variables.
-- The default credentials are insecure; update `ADMIN_USER`/`ADMIN_PASS` before deployment.
-- Directly editing `/etc/squid/squid.conf` and executing system commands from a web UI carries risk — only run on trusted hosts.
+### 1. Create Environment Configuration File
 
+Create `/etc/squid-panel.env`:
 
-## Structure Setup
+```bash
+sudo nano /etc/squid-panel.env
+```
 
-mkdir -p /opt/squid-panel/python_squid_admin/var
-cd /opt/squid-panel/python_squid_admin
-python3 -m venv venv
-source venv/bin/activate
-pip install fastapi uvicorn python-multipart jinja2
+Add the following configuration:
 
-## Create the Environment File (you can change your admin pass in this file)
-nano /etc/squid-panel.env
-
-SESSION_SECRET=SQUID_SECRET_CHANGE_ME
+```env
+# Session and Authentication
+SESSION_SECRET=ALFA_PRO_KEY_99
 ADMIN_USER=admin
-ADMIN_PASS=YourSecurePassword
+ADMIN_PASS=YourSecureAdminPassword
 
+# Squid Configuration
 SQUID_CONF=/etc/squid/squid.conf
 SQUID_SERVICE=squid
 SQUID_PORT=3128
 
-## firewall 
-firewall-cmd --permanent --add-port=8444/tcp
-firewall-cmd --reload
+# Backup Configuration
+BACKUP_DIR=/var/backups/squid-panel
+OCSERV_PASSWD_FILE=/var/lib/ocserv/ocpasswd
+PASSWD_FILE=/etc/squid/passwd
+```
 
-## Create the Environment File
-nano /etc/squid-panel.env
+Set proper permissions:
 
-SESSION_SECRET=SQUID_SECRET_CHANGE_ME
-ADMIN_USER=admin
-ADMIN_PASS=YourSecurePassword
+```bash
+sudo chmod 600 /etc/squid-panel.env
+```
 
-SQUID_CONF=/etc/squid/squid.conf
-SQUID_SERVICE=squid
-SQUID_PORT=3128
+### 2. Configure Firewall
 
-## Configure the Systemd Service
-nano /etc/systemd/system/squid-panel.service
+Allow the web UI port:
 
+```bash
+sudo firewall-cmd --permanent --add-port=8444/tcp
+sudo firewall-cmd --reload
+```
+
+### 3. Create Systemd Service
+
+Create `/etc/systemd/system/squid-panel.service`:
+
+```ini
 [Unit]
-Description=Squid Proxy Manager
-After=network.target
+Description=AlfaCore Squid Panel Administration UI
+After=network.target firewalld.service
+Wants=firewalld.service
 
 [Service]
+Type=simple
 WorkingDirectory=/opt/squid-panel/python_squid_admin
 EnvironmentFile=/etc/squid-panel.env
 ExecStart=/opt/squid-panel/python_squid_admin/venv/bin/uvicorn main:app \
     --host 0.0.0.0 \
     --port 8444 \
-    --ssl-certfile /etc/letsencrypt/live/YOUR-DOMAIN.COM/fullchain.pem \
-    --ssl-keyfile /etc/letsencrypt/live/YOUR-DOMAIN.COM/privkey.pem
-Restart=always
+    --reload
+Restart=on-failure
+RestartSec=10
 User=root
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=squid-panel
 
 [Install]
 WantedBy=multi-user.target
+```
 
+For production with SSL, replace `ExecStart` with:
 
-## Service start
+```bash
+ExecStart=/opt/squid-panel/python_squid_admin/venv/bin/uvicorn main:app \
+    --host 0.0.0.0 \
+    --port 8444 \
+    --ssl-certfile /etc/letsencrypt/live/YOUR-DOMAIN.COM/fullchain.pem \
+    --ssl-keyfile /etc/letsencrypt/live/YOUR-DOMAIN.COM/privkey.pem
+```
 
-systemctl restart squid-panel
+### 4. Enable and Start the Service
 
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable squid-panel
+sudo systemctl start squid-panel
+```
 
+Check status:
 
-## Author 
+```bash
+sudo systemctl status squid-panel
+```
 
-Rizwan Saleem
+View logs:
+
+```bash
+sudo journalctl -u squid-panel -f
+```
+
+## Running Locally
+
+For development and testing:
+
+```bash
+cd /opt/squid-panel/python_squid_admin
+source venv/bin/activate
+uvicorn main:app --reload --host 0.0.0.0 --port 8444
+```
+
+Then access the application at: `http://localhost:8444/login`
+
+## Default Credentials
+
+- **Username**: `admin` (or configured `ADMIN_USER`)
+- **Password**: `password` (or configured `ADMIN_PASS`)
+
+⚠️ **IMPORTANT**: Change these credentials immediately in `/etc/squid-panel.env` before production deployment.
+
+## Usage Guide
+
+### Dashboard
+View overall system status, installed services, and quick access to management pages.
+
+### Proxy Server
+- View active connections
+- Manage proxy users (add/remove)
+- Edit Squid configuration
+- Start/stop/restart Squid service
+
+### Firewall
+- View open ports
+- Add/remove firewall rules
+- Enable/disable firewall service
+- Persist rules permanently
+
+### Networks
+- Configure Ethernet interfaces
+- Manage DHCP server
+- View and edit network configurations
+
+### VPNs
+Manage multiple VPN technologies:
+- **OpenConnect Server (OCSERV)** - User and connection management
+- **IPSec (strongSwan)** - Site-to-site VPN configuration
+- **SSL/TLS Tunnels (stunnel)** - Encrypted tunnels
+- **SSH** - Secure shell access
+- **OpenVPN** - Generic VPN server/client
+
+For each VPN service, you can:
+- View installation steps and example configurations
+- Install/uninstall services
+- Start/stop services
+- Edit configuration files
+- Manage users (where applicable)
+
+### System Settings
+- Check available system updates
+- Search and install packages
+- Remove installed packages
+- View installed package count
+- Monitor system resources
+
+### Administration
+- Change admin password
+- Create system configuration backups
+- Download backups for offline storage
+- Delete old backups
+- View backup history
+
+## Security Considerations
+
+### Authentication & Sessions
+- ✓ Session-based authentication with 10-minute auto-logout
+- ✓ Credentials stored in environment variables
+- ⚠️ Change default admin credentials before production use
+- ⚠️ Use strong, unique SESSION_SECRET in production
+
+### System Access
+- ⚠️ Application runs as root (required for system management)
+- ⚠️ Web UI executes system commands - only expose on trusted networks
+- ✓ All shell arguments are properly escaped using `shlex.quote()`
+- ✓ Configuration file paths validated against BACKUP_DIR
+
+### Best Practices
+1. Run behind a reverse proxy with HTTPS/TLS
+2. Use Let's Encrypt certificates (included in prerequisites)
+3. Restrict firewall access to administrative networks
+4. Regularly backup configurations using the admin panel
+5. Monitor system logs: `sudo journalctl -u squid-panel -f`
+6. Keep Python packages updated: `pip install --upgrade -r requirements.txt`
+
+## Troubleshooting
+
+### Service Won't Start
+```bash
+sudo systemctl status squid-panel
+sudo journalctl -u squid-panel -n 50
+```
+
+### Port Already in Use
+Change port in systemd service or check what's using 8444:
+```bash
+sudo netstat -tlnp | grep 8444
+```
+
+### Permission Denied
+Ensure the application runs as root (User=root in systemd service) or with proper capabilities for system commands.
+
+### Package Search Not Working
+Verify `dnf` is installed and accessible:
+```bash
+sudo dnf search vim
+```
+
+### Backup Issues
+Check backup directory permissions:
+```bash
+sudo ls -la /var/backups/squid-panel
+```
+
+## Logs and Monitoring
+
+View real-time application logs:
+```bash
+sudo journalctl -u squid-panel -f
+```
+
+View Squid access logs:
+```bash
+sudo tail -f /var/log/squid/access.log
+```
+
+View firewall logs:
+```bash
+sudo journalctl -u firewalld -f
+```
+
+## API Endpoints
+
+All endpoints require authentication via session login.
+
+### Authentication
+- `GET /login` - Login page
+- `POST /login` - Process login
+- `GET /logout` - Logout
+
+### Dashboard & Main Pages
+- `GET /` - Dashboard
+- `GET /proxy` - Proxy management
+- `GET /firewall` - Firewall management
+- `GET /logs` - Access logs
+- `GET /networks` - Network configuration
+- `GET /vpns` - VPN services
+- `GET /system` - System settings
+- `GET /admin` - Administration panel
+
+### Service Management
+- `GET /service/{service_key}` - Service details
+- `POST /service/{service_key}/manage` - Service actions (install/start/stop/etc)
+- `GET /service/{service_key}/config` - Service configuration editor
+- `POST /service/{service_key}/config` - Save service configuration
+
+### User Management
+- `POST /proxy-user` - Manage Squid users
+- `POST /ocserv-user` - Manage OCSERV VPN users
+
+### System Management
+- `POST /system/search-packages` - Search for packages
+- `POST /system/install-updates` - Install system updates
+- `POST /system/install-package` - Install a package
+- `POST /system/remove-package` - Remove a package
+
+### Administration
+- `POST /admin/change-password` - Change admin password
+- `POST /admin/create-backup` - Create configuration backup
+- `GET /admin/download-backup/{backup_name}` - Download backup
+- `POST /admin/delete-backup` - Delete backup
+
+## Dependencies
+
+See `requirements.txt` for detailed versions. Main dependencies:
+
+- **FastAPI** - Web framework
+- **Uvicorn** - ASGI server
+- **Jinja2** - Template engine
+- **Starlette** - ASGI toolkit (for session middleware)
+- **python-multipart** - Form data handling
+- **itsdangerous** - Session security
+
+## Author
+
+**Rizwan Saleem**
+
+## License
+
+This project is provided as-is for system administration purposes.
+
+## Support & Contribution
+
+For issues, feature requests, or contributions, please contact the development team.
+
+---
+
+**Last Updated**: May 2026
+**Version**: 2.0 (AlfaCore)
