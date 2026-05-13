@@ -43,7 +43,13 @@
                 <p style="margin-bottom:16px; color:var(--muted);">
                     Status: <strong>{{ 'Installed' if item.installed else 'Not Installed' }}</strong> • <strong>{{ 'Active' if item.active else 'Inactive' }}</strong>
                 </p>
-                <a href="/service/{{ item.key }}" class="btn">Manage {{ item.label }}</a>
+                <div style="display:flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <a href="/service/{{ item.key }}" class="btn">Manage</a>
+                    <a href="/service/{{ item.key }}/config" class="btn" style="background: rgba(255,255,255,0.06); color: var(--text);">Config</a>
+                </div>
             </div>
             {% endfor %}
+        </div>
+    </div>
+</body>
 </html>
