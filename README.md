@@ -8,7 +8,7 @@ AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 ## Example Pictures
 
-![Alfa Core Firewall Dashboard](assets/Dashboard | AlfaCore.png)
+![Alfa Core Firewall Dashboard](assets/Dashboard.png)
 
 ### Core Services
 - **Proxy Server** - Squid proxy configuration, user management, and traffic control
