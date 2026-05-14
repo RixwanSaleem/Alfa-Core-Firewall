@@ -1,174 +1,64 @@
-<!DOCTYPE html>
-<html lang="{{ get_user_language(request) }}" dir="{{ 'rtl' if get_user_language(request)=='ar' else 'ltr' }}">
-<head>
-    <title>AlfaCore - {{ service_label }}</title>
-    <style>
-        :root { --bg: #020617; --sidebar: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --muted: #64748b; --green: #10b981; --red: #f43f5e; --line: rgba(255, 255, 255, 0.05); }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
-        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--line); padding: 40px 24px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .logo { font-size: 24px; font-weight: 800; margin-bottom: 40px; color: white; text-decoration: none; display: block; }
-        .nav-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
-        .nav-link { color: var(--text); text-decoration: none; padding: 12px 16px; border-radius: 12px; font-size: 14px; margin-bottom: 8px; display: block; }
-        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.15); }
-        .content { flex-grow: 1; padding: 40px; overflow-y: auto; }
-        .page-title { font-size: 28px; margin-bottom: 14px; }
-        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--line); margin-bottom: 25px; }
-        .field { color: var(--muted); margin-bottom: 10px; }
-        .status { margin-top: 16px; display: flex; gap: 14px; flex-wrap: wrap; }
-        .pill { display: inline-flex; padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-        .pill-green { background: rgba(16, 185, 129, 0.12); color: var(--green); }
-        .pill-red { background: rgba(244, 63, 94, 0.12); color: var(--red); }
-        .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
-        .btn { padding: 12px 18px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; color: white; font-size: 14px; }
-        .btn-blue { background: var(--accent); }
-        .btn-red { background: var(--red); }
-        .btn-green { background: var(--green); }
-        .btn-gray { background: #1f2937; }
-        .btn-small { padding: 8px 14px; font-size: 12px; border-radius: 8px; }
-        .btn-icon { padding: 8px; width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
-        input[type="text"], input[type="password"] { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--text); font-size: 14px; margin-right: 8px; }
-        .user-item { background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-left: 3px solid var(--accent); }
-        .user-name { font-weight: 600; }
-        .user-actions { display: flex; gap: 8px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
-    </style>
-</head>
-<body>
-<div class="sidebar">
-    <a href="/" class="logo">ALFA<span>CORE</span></a>
-    <span class="nav-label">{{ t(request, "sidebar_main") }}</span>
-    <a href="/" class="nav-link">{{ t(request, "nav_dashboard") }}</a>
-    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_services") }}</span>
-    <a href="/proxy" class="nav-link">{{ t(request, "nav_proxy") }}</a>
-    <a href="/firewall" class="nav-link">{{ t(request, "nav_firewall") }}</a>
-    <a href="/logs" class="nav-link">{{ t(request, "nav_logs") }}</a>
-    <a href="/network" class="nav-link {{ 'active' if nav_section == 'network' else '' }}">{{ t(request, "nav_networks") }}</a>
-    <a href="/vpns" class="nav-link {{ 'active' if nav_section == 'vpn' else '' }}">{{ t(request, "nav_vpns") }}</a>
-    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_system") }}</span>
-    <a href="/system" class="nav-link">{{ t(request, "nav_system") }}</a>
-    <a href="/admin" class="nav-link">{{ t(request, "nav_admin") }}</a>
-    <div style="margin-top:auto;"><a href="/logout" class="nav-link" style="color:var(--red)">{{ t(request, "nav_logout") }}</a></div>
-</div>
-<div class="content">
-    <div class="page-title">{{ service_label }} Service</div>
-    <div class="card">
-        <p class="field">Description: {{ description }}</p>
-        <p class="field">Package: <strong>{{ package_name }}</strong></p>
-        <p class="field">Service name: <strong>{{ service_name }}</strong></p>
-        <div class="status">
-            <span class="pill {{ 'pill-green' if installed else 'pill-red' }}">{{ 'Installed' if installed else 'Not Installed' }}</span>
-            <span class="pill {{ 'pill-green' if active else 'pill-red' }}">{{ 'Active' if active else 'Inactive' }}</span>
-        </div>
-        <div class="actions">
-            {% if not installed %}
-            <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
-                <input type="hidden" name="action" value="install">
-                <button type="submit" class="btn btn-green">Install</button>
-            </form>
-            {% else %}
-            {% if not active %}
-            <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
-                <input type="hidden" name="action" value="start">
-                <button type="submit" class="btn btn-green btn-small">Start</button>
-            </form>
-            {% endif %}
-            <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
-                <input type="hidden" name="action" value="uninstall">
-                <button type="submit" class="btn btn-red">Uninstall</button>
-            </form>
-            <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
-                <input type="hidden" name="action" value="restart">
-                <button type="submit" class="btn btn-blue">Restart</button>
-            </form>
-            <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
-                <input type="hidden" name="action" value="enable">
-                <button type="submit" class="btn btn-green">Enable</button>
-            </form>
-            <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block;">
-                <input type="hidden" name="action" value="disable">
-                <button type="submit" class="btn btn-gray">Disable</button>
-            </form>
-            {% endif %}
-            {% if service_key in ['ocserv', 'ipsec', 'ssl', 'ssh', 'vpn', 'dhcp-server', 'ethernet'] %}
-            <a href="/service/{{ service_key }}/config" class="btn btn-icon btn-blue" title="Edit Configuration" style="font-size: 18px;">⚙️</a>
-            {% endif %}
-        </div>
-    </div>
-    {% if service_key == 'ocserv' and installed %}
-    <div class="card">
-        <div style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">👥 User Management</div>
-        <div style="margin-bottom: 24px;">
-            <div style="color: var(--muted); font-size: 12px; margin-bottom: 12px; text-transform: uppercase;">
-                Connected Sessions • {{ ocserv_connections|length if ocserv_connections else 0 }}
+{% extends "base.html" %}
+{% block title %}{{ service_label }} | AlfaCore{% endblock %}
+{% block page_title %}{{ service_label }}{% endblock %}
+{% block page_subtitle %}{{ t(request, "service_title") }} · {{ description }}{% endblock %}
+{% block content %}
+    <section class="content-grid">
+        <div class="card">
+            <div class="card-title">{{ service_label }}</div>
+            <div class="card-meta">
+                <p>{{ description }}</p>
+                <p>{{ t(request, "service_installed") }}: <strong>{{ t(request, "status_yes") if installed else t(request, "status_no") }}</strong></p>
+                <p>{{ t(request, "dashboard_status") }}: <strong>{{ t(request, "dashboard_status_active") if active else t(request, "dashboard_status_inactive") }}</strong></p>
             </div>
-            {% if ocserv_connections %}
-            {% for conn in ocserv_connections %}
-            <div class="user-item">
-                <span class="user-name">{{ conn }}</span>
+            <div class="actions">
+                {% if not installed %}
+                <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block; margin:0;">
+                    <input type="hidden" name="action" value="install">
+                    <button type="submit" class="button button-primary">{{ t(request, "btn_save") }}</button>
+                </form>
+                {% else %}
+                <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block; margin:0;">
+                    <input type="hidden" name="action" value="restart">
+                    <button type="submit" class="button button-primary">{{ t(request, "btn_save") }}</button>
+                </form>
+                <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block; margin:0;">
+                    <input type="hidden" name="action" value="uninstall">
+                    <button type="submit" class="button button-danger">{{ t(request, "btn_delete") }}</button>
+                </form>
+                {% endif %}
+                <a href="/service/{{ service_key }}/config" class="button button-ghost">{{ t(request, "btn_config") }}</a>
             </div>
-            {% endfor %}
-            {% else %}
-            <p style="color: var(--muted); font-style: italic;">No connected users.</p>
-            {% endif %}
         </div>
-        <div style="margin-bottom: 24px;">
-            <div style="color: var(--muted); font-size: 12px; margin-bottom: 12px; text-transform: uppercase;">
-                Current Users • {{ ocserv_users|length if ocserv_users else 0 }}
+        <div class="card">
+            <div class="card-title">{{ t(request, "service_config") }}</div>
+            <div class="card-copy">{{ t(request, "service_example") }}</div>
+            <div class="status-row">
+                <span class="badge {{ 'status-active' if installed else 'status-inactive' }}">{{ t(request, "service_installed") if installed else t(request, "service_not_installed") }}</span>
             </div>
-            {% if ocserv_users %}
-            {% for user in ocserv_users %}
-            <div class="user-item">
-                <span class="user-name">{{ user }}</span>
-                <div class="user-actions">
-                    <button type="button" class="btn btn-blue btn-small" onclick="showResetForm('{{ user }}')">Reset Password</button>
-                    <form action="/ocserv-user" method="post" style="display:inline-block;" onsubmit="return confirm('Delete user {{ user }}?');">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="username" value="{{ user }}">
-                        <button type="submit" class="btn btn-red btn-small">Delete</button>
-                    </form>
-                </div>
-                <div id="reset-form-{{ user }}" style="display: none; margin-top: 10px;">
-                    <form action="/ocserv-user" method="post" style="display: flex; gap: 8px; align-items: center;">
-                        <input type="hidden" name="action" value="reset">
-                        <input type="hidden" name="username" value="{{ user }}">
-                        <input type="password" name="password" placeholder="New password" required style="flex: 1;">
-                        <button type="submit" class="btn btn-green btn-small">Update</button>
-                        <button type="button" class="btn btn-gray btn-small" onclick="hideResetForm('{{ user }}')">Cancel</button>
-                    </form>
-                </div>
-            </div>
-            {% endfor %}
-            {% else %}
-            <p style="color: var(--muted); font-style: italic;">No users created yet.</p>
-            {% endif %}
         </div>
-        <div style="border-top: 1px solid var(--line); padding-top: 20px;">
-            <div style="color: var(--muted); font-size: 12px; margin-bottom: 12px; text-transform: uppercase;">Create New User</div>
-            <form action="/ocserv-user" method="post">
+    </section>
+    {% if service_key == 'ocserv' %}
+    <section class="card services-panel">
+        <div class="services-title">{{ t(request, "vpn_users") }}</div>
+        <div class="form-grid">
+            <form action="/ocserv-user" method="post" class="form-grid">
                 <input type="hidden" name="action" value="add">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" name="username" placeholder="Enter username" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" name="password" placeholder="Enter password" required>
-                </div>
-                <button type="submit" class="btn btn-green">Create User</button>
+                <div class="field-group"><label>{{ t(request, "proxy_username") }}</label><input type="text" name="username" required></div>
+                <div class="field-group"><label>{{ t(request, "proxy_password") }}</label><input type="password" name="password" required></div>
+                <button type="submit" class="button button-primary">{{ t(request, "vpn_add_user") }}</button>
             </form>
         </div>
-    </div>
+        {% for user in ocserv_users %}
+        <div class="service-card">
+            <span>{{ user }}</span>
+            <form action="/ocserv-user" method="post" style="display:inline-block; margin:0;">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="username" value="{{ user }}">
+                <button type="submit" class="button button-danger">{{ t(request, "vpn_delete_user") }}</button>
+            </form>
+        </div>
+        {% endfor %}
+    </section>
     {% endif %}
-</div>
-<script>
-function showResetForm(username) {
-    document.getElementById('reset-form-' + username).style.display = 'block';
-}
-function hideResetForm(username) {
-    document.getElementById('reset-form-' + username).style.display = 'none';
-}
-</script>
-</body>
-</html>
+{% endblock %}
