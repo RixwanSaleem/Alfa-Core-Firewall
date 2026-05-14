@@ -1,16 +1,15 @@
 # AlfaCore - Firewall Panel Administration UI
 
 A comprehensive FastAPI-based web administration interface for managing network services including Squid proxy, firewall rules, VPN services, and system settings on a Linux host.
+## Demo
+
+<img src="assets/Demo-Vid.gif" width="800"/>
 
 ## Project Overview
 
 AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 ## Example Pictures
-
-
-
-
 <p>
 <img src="assets/Dashboard.png" width="30%"/>
 <img src="assets/Administration.png" width="30%"/>
