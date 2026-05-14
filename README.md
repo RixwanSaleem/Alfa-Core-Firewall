@@ -478,8 +478,8 @@ See `requirements.txt` for detailed versions. Main dependencies:
 **Rizwan Saleem**
 
 ## License
+This project is licensed under the [MIT License](LICENSE).
 
-This project is provided as-is for system administration purposes.
 
 ## Support & Contribution
 
