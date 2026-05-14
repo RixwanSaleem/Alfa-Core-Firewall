@@ -1,13 +1,22 @@
 # AlfaCore - Firewall Panel Administration UI
 
-A comprehensive FastAPI-based web administration interface for managing network services including Squid proxy, firewall rules, VPN services, and system settings on a Linux host.
+A FastAPI-based web administration UI for managing network services on Linux, including Squid proxy, firewall rules, VPN services, network interfaces, and system settings.
+
 ## Demo
 
 <img src="assets/Demo-Vid.gif" width="800"/>
 
 ## Project Overview
 
-AlfaCore Panel provides a modern, user-friendly dashboard for managing:
+This project provides a single-page admin panel for managing:
+
+- Squid proxy configuration and proxy users
+- Firewall port rules and firewalld management
+- Network interface management (WAN/LAN, DHCP/static IPv4)
+- NoIP.com Dynamic DNS client configuration
+- VPN service tooling and service management
+- System package search, updates, and backups
+- Admin password and session configuration
 
 ## Example Pictures
 <p>
@@ -49,6 +58,12 @@ AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 ### Key Features
 - 🔐 Secure session-based authentication with auto-logout (10 minutes)
+- 🫆Network interface management using JSON storage (`/etc/squid-panel/interfaces.json`)
+- 👣 NoIP.com client configuration stored in `/etc/squid-panel/noip.json`
+- 👩‍🚒IPv4-only static/DHCP interface support
+- 🧑🏻‍💻System command execution with shell escaping via `shlex.quote()`
+- 👨🏻‍🔧Configuration backups and restore support
+- 🧛‍♂️Jinja2 templates for the UI
 - 📊 Real-time system status and service monitoring
 - 🔧 Service installation, configuration, and lifecycle management
 - 📦 DNF package management with search and install capabilities
@@ -57,6 +72,13 @@ AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 - 🎨 Modern dark-themed responsive UI
 - 👥 User management for OCSERV VPN and proxy services
 - 🗣️ Multi languages
+
+## New Network Features
+
+- Add/edit/delete multiple WAN/LAN interfaces
+- Apply interface changes to `/etc/sysconfig/network-scripts/ifcfg-*`
+- Reload NetworkManager with `nmcli`
+- Manage NoIP dynamic DNS credentials and enable/disable state
 
 ## Languages
 
@@ -70,30 +92,35 @@ Arabic
 ## Project Structure
 
 ```
-squid-panel/
-├── python_squid_admin/
-│   ├── main.py                 # FastAPI application with all endpoints
-│   ├── requirements.txt         # Python package dependencies
-│   ├── README.md                # This file
-│   ├── templates/               # Jinja2 HTML templates
-│   │   ├── login.html           # Login page
-│   │   ├── dashboard.html       # Main dashboard
-│   │   ├── proxy.html           # Squid proxy management
-│   │   ├── firewall.html        # Firewall configuration
-│   │   ├── networks.html        # Network services
-│   │   ├── vpns.html            # VPN services
-│   │   ├── logs.html            # Access logs viewer
-│   │   ├── service.html         # Individual service management
-│   │   ├── config.html          # Configuration editor
-│   │   ├── system.html          # System settings & package management
-│   │   └── admin.html           # Administration panel
-│   └── var/                     # Reserved for future use
-└── systemd/
-    └── squid-panel.service      # Systemd service configuration
+python_squid_admin/
+├── main.py                # FastAPI application and route logic
+├── README.md              # Project documentation
+├── requirements-dev.txt   # Development/test dependencies
+├── templates/             # Jinja2 templates for the web UI
+│   ├── admin.html
+│   ├── base.html
+│   ├── config.html
+│   ├── dashboard.html
+│   ├── firewall.html
+│   ├── login.html
+│   ├── logs.html
+│   ├── networks.html
+│   ├── proxy.html
+│   ├── service.html
+│   ├── system.html
+│   ├── vpns.html
+│   └── ...
+├── tests/                 # Automated project tests
+│   └── test_network_interfaces.py
+└── var/                   # Reserved for runtime or future use
 ```
 
 ## System Requirements
 
+- OS: Linux with systemd
+- Python 3.9+ (tested with Python 3.11)
+- Root access for service and firewall management
+- `firewalld`, `squid`, `NetworkManager` / `nmcli` if using network interfaces
 - **OS**: Fedora/RHEL/CentOS with systemd
 - **Python**: 3.9 or higher
 - **Root Access**: Required for service and firewall management
@@ -105,7 +132,7 @@ squid-panel/
   - `openssl` (for certificate generation)
 
 ## Prerequisites Installation
-
+python3 -m pip install -r requirements-dev.txt
 Install required system packages:
 
 ```bash
@@ -428,6 +455,23 @@ See `requirements.txt` for detailed versions. Main dependencies:
 - **Starlette** - ASGI toolkit (for session middleware)
 - **python-multipart** - Form data handling
 - **itsdangerous** - Session security
+
+## Usage Summary
+
+- `/login` — login page
+- `/` — dashboard
+- `/proxy` — Squid proxy management
+- `/firewall` — firewall management
+- `/networks` — network interfaces and NoIP configuration
+- `/logs` — access log viewing
+- `/admin` — administration and backups
+
+## Notes
+
+- This panel is designed for Linux systems with root-level access.
+- The network feature is IPv4-only and stores interface settings in JSON.
+- NoIP credentials are saved in plain JSON; secure the host and config directory.
+
 
 ## Author
 
