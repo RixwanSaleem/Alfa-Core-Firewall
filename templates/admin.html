@@ -1,178 +1,106 @@
-<!DOCTYPE html>
-<html lang="{{ get_user_language(request) }}" dir="{{ 'rtl' if get_user_language(request)=='ar' else 'ltr' }}">
-<head>
-    <title>AlfaCore - Administration</title>
-    <style>
-        :root { --bg: #020617; --sidebar: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --muted: #64748b; --green: #10b981; --red: #f43f5e; --line: rgba(255, 255, 255, 0.05); }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
-        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--line); padding: 40px 24px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .logo { font-size: 24px; font-weight: 800; margin-bottom: 40px; color: white; text-decoration: none; display: block; }
-        .nav-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
-        .nav-link { color: var(--text); text-decoration: none; padding: 12px 16px; border-radius: 12px; font-size: 14px; margin-bottom: 8px; display: block; }
-        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.15); }
-        .content { flex-grow: 1; padding: 40px; overflow-y: auto; }
-        .page-title { font-size: 28px; margin-bottom: 14px; }
-        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--line); margin-bottom: 25px; }
-        .field { color: var(--muted); margin-bottom: 10px; }
-        .btn { padding: 12px 18px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; color: white; font-size: 14px; }
-        .btn-blue { background: var(--accent); }
-        .btn-green { background: var(--green); }
-        .btn-red { background: var(--red); }
-        .btn-gray { background: #1f2937; }
-        .btn-small { padding: 8px 12px; font-size: 12px; }
-        .btn:hover { opacity: 0.9; }
-        input[type="text"], input[type="password"] { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--text); font-size: 14px; width: 100%; margin-bottom: 12px; }
-        .alert { padding: 12px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; }
-        .alert-success { background: rgba(16, 185, 129, 0.15); color: var(--green); border-left: 3px solid var(--green); }
-        .alert-error { background: rgba(244, 63, 94, 0.15); color: var(--red); border-left: 3px solid var(--red); }
-        .section { margin-bottom: 30px; }
-        .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--accent); }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
-        .backup-item { background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; border-left: 3px solid var(--accent); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .backup-info { flex-grow: 1; }
-        .backup-name { font-weight: 600; font-family: 'Monaco', monospace; font-size: 13px; }
-        .backup-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
-        .backup-actions { display: flex; gap: 8px; }
-        .divider { border-top: 1px solid var(--line); margin: 30px 0; padding-top: 30px; }
-    </style>
-</head>
-<body>
-<div class="sidebar">
-    <a href="/" class="logo">ALFA<span>CORE</span></a>
-    <span class="nav-label">{{ t(request, "sidebar_main") }}</span>
-    <a href="/" class="nav-link">{{ t(request, "nav_dashboard") }}</a>
-    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_services") }}</span>
-    <a href="/proxy" class="nav-link">{{ t(request, "nav_proxy") }}</a>
-    <a href="/firewall" class="nav-link">{{ t(request, "nav_firewall") }}</a>
-    <a href="/logs" class="nav-link">{{ t(request, "nav_logs") }}</a>
-    <a href="/network" class="nav-link">{{ t(request, "nav_networks") }}</a>
-    <a href="/vpns" class="nav-link">{{ t(request, "nav_vpns") }}</a>
-    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_system") }}</span>
-    <a href="/system" class="nav-link">{{ t(request, "nav_system") }}</a>
-    <a href="/admin" class="nav-link active">{{ t(request, "nav_admin") }}</a>
-    <div style="margin-top:auto;"><a href="/logout" class="nav-link" style="color:var(--red)">{{ t(request, "nav_logout") }}</a></div>
-</div>
-<div class="content">
-    <div class="page-title">🔐 Administration</div>
-    
+{% extends "base.html" %}
+{% block title %}{{ t(request, "admin_title") }} | AlfaCore{% endblock %}
+{% block page_title %}{{ t(request, "admin_title") }}{% endblock %}
+{% block page_subtitle %}{{ t(request, "admin_backups") }} · {{ t(request, "admin_language") }}{% endblock %}
+{% block content %}
     {% if request.query_params.get('success') == 'password_changed' %}
-    <div class="alert alert-success">✓ Admin password has been changed successfully</div>
+        <div class="alert alert-success">{{ t(request, "msg_password_changed") }}</div>
     {% endif %}
     {% if request.query_params.get('success') == 'language_changed' %}
-    <div class="alert alert-success">✓ Language has been changed successfully</div>
+        <div class="alert alert-success">{{ t(request, "msg_config_saved") }}</div>
     {% endif %}
     {% if request.query_params.get('success') == 'backup_created' %}
-    <div class="alert alert-success">✓ Backup created successfully</div>
+        <div class="alert alert-success">{{ t(request, "msg_backup_created") }}</div>
     {% endif %}
     {% if request.query_params.get('success') == 'backup_deleted' %}
-    <div class="alert alert-success">✓ Backup deleted successfully</div>
+        <div class="alert alert-success">{{ t(request, "msg_backup_deleted") }}</div>
     {% endif %}
-    
     {% if request.query_params.get('error') == 'invalid_password' %}
-    <div class="alert alert-error">✗ Current password is incorrect</div>
+        <div class="alert alert-danger">{{ t(request, "msg_invalid_password") }}</div>
     {% endif %}
     {% if request.query_params.get('error') == 'passwords_not_match' %}
-    <div class="alert alert-error">✗ New passwords do not match</div>
+        <div class="alert alert-danger">{{ t(request, "msg_passwords_not_match") }}</div>
     {% endif %}
     {% if request.query_params.get('error') == 'password_too_short' %}
-    <div class="alert alert-error">✗ Password must be at least 8 characters long</div>
+        <div class="alert alert-danger">{{ t(request, "msg_password_too_short") }}</div>
     {% endif %}
     {% if request.query_params.get('error') == 'write_failed' %}
-    <div class="alert alert-error">✗ Failed to update configuration file</div>
+        <div class="alert alert-danger">{{ t(request, "alert_error") }}: {{ t(request, "msg_invalid_password") }}</div>
     {% endif %}
     {% if request.query_params.get('error') == 'backup_failed' %}
-    <div class="alert alert-error">✗ Failed to create backup</div>
+        <div class="alert alert-danger">{{ t(request, "alert_error") }}: {{ t(request, "msg_invalid_password") }}</div>
     {% endif %}
     {% if request.query_params.get('error') == 'delete_failed' %}
-    <div class="alert alert-error">✗ Failed to delete backup</div>
+        <div class="alert alert-danger">{{ t(request, "alert_error") }}: {{ t(request, "msg_invalid_password") }}</div>
     {% endif %}
     {% if request.query_params.get('error') == 'invalid_language' %}
-    <div class="alert alert-error">✗ Invalid language selection</div>
+        <div class="alert alert-danger">{{ t(request, "alert_error") }}: {{ t(request, "admin_language") }}</div>
     {% endif %}
-    
-    <!-- Change Admin Password -->
-    <div class="card">
-        <div class="section-title">🔑 Change Admin Password</div>
-        <form action="/admin/change-password" method="post">
-            <div class="form-group">
-                <label>Current Password</label>
-                <input type="password" name="current_password" required>
-            </div>
-            <div class="form-group">
-                <label>New Password (minimum 8 characters)</label>
-                <input type="password" name="new_password" required minlength="8">
-            </div>
-            <div class="form-group">
-                <label>Confirm New Password</label>
-                <input type="password" name="confirm_password" required minlength="8">
-            </div>
-            <button type="submit" class="btn btn-green">Update Password</button>
-        </form>
-    </div>
-    
-    <!-- Change Language -->
-    <div class="card">
-        <div class="section-title">🌐 Change Language</div>
-        <p class="field">Select your preferred language for the administration interface.</p>
-        <form action="/admin/change-language" method="post">
-            <div class="form-group">
-                <label>Select Language</label>
-                <select name="language" required style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--text); font-size: 14px; width: 100%; margin-bottom: 12px;">
-                    {% for lang_code, lang_name in languages.items() %}
-                    <option value="{{ lang_code }}" {% if language == lang_code %}selected{% endif %}>{{ lang_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="btn btn-blue">Change Language</button>
-        </form>
-    </div>
-    
-    <!-- Backup and Restore -->
-    <div class="card">
-        <div class="section-title">💾 Backup & Restore</div>
-        
-        <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line);">
-            <p class="field">Create a backup of all important configuration files.</p>
-            <form action="/admin/create-backup" method="post" style="display:inline;">
-                <button type="submit" class="btn btn-green">Create Backup Now</button>
+
+    <div class="form-grid">
+        <div class="card">
+            <div class="card-title">{{ t(request, "admin_password") }}</div>
+            <div class="card-copy">{{ t(request, "admin_change_pass") }}</div>
+            <form action="/admin/change-password" method="post" class="form-grid">
+                <div class="field-group">
+                    <label for="current_password">{{ t(request, "admin_current_pass") }}</label>
+                    <input type="password" id="current_password" name="current_password" required>
+                </div>
+                <div class="field-group">
+                    <label for="new_password">{{ t(request, "admin_new_pass") }}</label>
+                    <input type="password" id="new_password" name="new_password" required minlength="8">
+                </div>
+                <div class="field-group">
+                    <label for="confirm_password">{{ t(request, "admin_confirm_pass") }}</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required minlength="8">
+                </div>
+                <button type="submit" class="button button-primary">{{ t(request, "admin_change_pass") }}</button>
             </form>
         </div>
-        
-        <div>
-            <div class="section-title" style="margin-top: 0;">Available Backups ({{ backup_count }})</div>
-            
+
+        <div class="card">
+            <div class="card-title">{{ t(request, "admin_language") }}</div>
+            <div class="card-copy">{{ t(request, "admin_language") }}</div>
+            <form action="/admin/change-language" method="post" class="form-grid">
+                <div class="field-group">
+                    <label for="language">{{ t(request, "admin_language") }}</label>
+                    <select id="language" name="language" required>
+                        {% for lang_code, lang_name in languages.items() %}
+                            <option value="{{ lang_code }}" {% if language == lang_code %}selected{% endif %}>{{ lang_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="button button-primary">{{ t(request, "admin_language") }}</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">{{ t(request, "admin_backups") }}</div>
+        <div class="card-copy">{{ t(request, "admin_backups") }}</div>
+        <form action="/admin/create-backup" method="post" style="margin-bottom: 24px;">
+            <button type="submit" class="button button-primary">{{ t(request, "admin_create_backup") }}</button>
+        </form>
+        <div class="service-list">
             {% if backups %}
                 {% for backup in backups %}
-                <div class="backup-item">
-                    <div class="backup-info">
-                        <div class="backup-name">{{ backup.name }}</div>
-                        <div class="backup-meta">{{ backup.date }} • {{ backup.size }}</div>
+                <div class="service-card">
+                    <div>
+                        <strong>{{ backup.name }}</strong>
+                        <div class="footer-note">{{ backup.date }} · {{ backup.size }}</div>
                     </div>
-                    <div class="backup-actions">
-                        <a href="/admin/download-backup/{{ backup.name }}" class="btn btn-blue btn-small">Download</a>
-                        <form action="/admin/delete-backup" method="post" style="display:inline;">
+                    <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+                        <a href="/admin/download-backup/{{ backup.name }}" class="button button-ghost">{{ t(request, "admin_download") }}</a>
+                        <form action="/admin/delete-backup" method="post" style="display:inline-block; margin:0;">
                             <input type="hidden" name="backup_name" value="{{ backup.name }}">
-                            <button type="submit" class="btn btn-red btn-small" onclick="return confirm('Delete this backup?')">Delete</button>
+                            <button type="submit" class="button button-danger">{{ t(request, "admin_delete") }}</button>
                         </form>
                     </div>
                 </div>
                 {% endfor %}
             {% else %}
-                <p style="color: var(--muted); text-align: center; padding: 20px;">No backups available. Create one now to get started.</p>
+                <div class="card-copy">No backups available. Create one to protect your configuration.</div>
             {% endif %}
         </div>
     </div>
-    
-    <!-- System Information -->
-    <div class="card">
-        <div class="section-title">ℹ️ System Information</div>
-        <p class="field">System Uptime: <strong>{{ uptime }}</strong></p>
-        <p class="field">Load Average: <strong>{{ load }}</strong></p>
-        <p class="field">Firewall Status: <strong>{{ 'Active' if fw_active else 'Inactive' }}</strong></p>
-        <p class="field">Squid Proxy: <strong>{{ 'Active' if squid_active else 'Inactive' }}</strong></p>
-    </div>
-</div>
-</body>
-</html>
+{% endblock %}
