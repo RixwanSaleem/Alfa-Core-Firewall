@@ -7,8 +7,9 @@ A comprehensive FastAPI-based web administration interface for managing network 
 AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 ## Example Pictures
+<img src="assets/Dashboard.png" width="600"/>
 
-![Alfa Core Firewall Dashboard](assets/Dashboard.png)
+#![Alfa Core Firewall Dashboard](assets/Dashboard.png)
 
 ### Core Services
 - **Proxy Server** - Squid proxy configuration, user management, and traffic control
