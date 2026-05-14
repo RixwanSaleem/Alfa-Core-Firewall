@@ -9,7 +9,7 @@ AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 ## Example Pictures
 <img src="assets/Dashboard.png" width="30%"/> <img src="assets/Administration.png" width="30%"/>
 <img src="assets/DHCP.png" width="30%"/> <img src="assets/Firewall.png" width="30%"/>
-<img src="assets/Networks.png" width="30%"/> img src="assets/OpenConnect.png" width="30%"/>
+<img src="assets/Networks.png" width="30%"/> <img src="assets/OpenConnect.png" width="30%"/>
 <img src="assets/Proxy-server.png" width="30%"/> <img src="assets/System-Settings.png" width="30%"/>
 <img src="assets/VPN-Services.png" width="30%"/> <img src="assets/Login-Page.png" width="30%"/>
 
