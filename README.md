@@ -25,7 +25,7 @@ AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 <p>
 <img src="assets/Proxy-server.png" width="30%"/>
-<img src="assets/System-Settings.png" width="30%"/>
+<img src="assets/Networks.png" width="30%"/>
 </p>
 
 <p>
