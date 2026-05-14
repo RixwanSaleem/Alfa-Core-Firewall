@@ -10,11 +10,24 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from translations import LANGUAGES, get_translation, get_all_translations
 
 app = FastAPI()
 # Set max_age to 600 seconds (10 minutes) for auto-logout
 app.add_middleware(SessionMiddleware, secret_key="ALFA_PRO_KEY_99", max_age=600)
 templates = Jinja2Templates(directory="templates")
+
+# Translation helpers for all templates
+def get_user_language(request):
+    return request.session.get("language", "en")
+
+def translate(request, key):
+    lang = get_user_language(request)
+    return get_translation(lang, key)
+
+templates.env.globals["t"] = translate
+templates.env.globals["get_user_language"] = get_user_language
+
 
 ENV_FILE = "/etc/squid-panel.env"
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
@@ -226,9 +239,50 @@ def get_backups():
             })
     return backups
 
+
+# Language Management Functions
+def get_user_language(request: Request) -> str:
+    """Get user's preferred language from session or environment"""
+    language = request.session.get("language", "en")
+    if language not in LANGUAGES:
+        language = "en"
+    return language
+
+
+def set_user_language(request: Request, language: str):
+    """Set user's preferred language in session"""
+    if language in LANGUAGES:
+        request.session["language"] = language
+        # Also save to config file
+        config = read_env_file()
+        config["DEFAULT_LANGUAGE"] = language
+        write_env_file(config)
+
+
+def create_translation_context(request: Request, base_context: dict) -> dict:
+    """
+    Add translation strings to template context
+    
+    Args:
+        request: FastAPI request object
+        base_context: Base context dictionary
+        
+    Returns:
+        Context with translations included
+    """
+    language = get_user_language(request)
+    translations = get_all_translations(language)
+    
+    base_context["language"] = language
+    base_context["languages"] = LANGUAGES
+    base_context.update(translations)
+    
+    return base_context
+
 @app.get("/login")
 async def login_page(request: Request):
-    return templates.TemplateResponse(request=request, name="login.html", context={"request": request})
+    context = create_translation_context(request, {"request": request})
+    return templates.TemplateResponse(request=request, name="login.html", context=context)
 
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -255,7 +309,8 @@ async def dashboard(request: Request):
                 "label": service["label"],
                 "active": is_service_active(service["service"])
             })
-    return templates.TemplateResponse(request=request, name="dashboard.html", context={"request": request, **get_stats(), "connections": conns, "installed_services": installed_services})
+    context = create_translation_context(request, {"request": request, **get_stats(), "connections": conns, "installed_services": installed_services})
+    return templates.TemplateResponse(request=request, name="dashboard.html", context=context)
 
 @app.get("/proxy")
 async def proxy_page(request: Request):
@@ -267,21 +322,24 @@ async def proxy_page(request: Request):
         with open(PASSWD_FILE, "r") as f:
             users = [line.split(":")[0] for line in f if ":" in line]
     config = Path("/etc/squid/squid.conf").read_text() if os.path.exists("/etc/squid/squid.conf") else ""
-    return templates.TemplateResponse(request=request, name="proxy.html", context={"request": request, **stats, "proxy_users": users, "config": config})
+    context = create_translation_context(request, {"request": request, **stats, "proxy_users": users, "config": config})
+    return templates.TemplateResponse(request=request, name="proxy.html", context=context)
 
 @app.get("/firewall")
 async def firewall_page(request: Request):
     if not request.session.get("logged_in"):
         return RedirectResponse("/login")
     ports = run_cmd("firewall-cmd --list-ports").stdout.strip()
-    return templates.TemplateResponse(request=request, name="firewall.html", context={"request": request, **get_stats(), "open_ports": ports.split()})
+    context = create_translation_context(request, {"request": request, **get_stats(), "open_ports": ports.split()})
+    return templates.TemplateResponse(request=request, name="firewall.html", context=context)
 
 @app.get("/logs")
 async def logs_page(request: Request):
     if not request.session.get("logged_in"):
         return RedirectResponse("/login")
     logs = run_cmd("tail -n 100 /var/log/squid/access.log").stdout
-    return templates.TemplateResponse(request=request, name="logs.html", context={"request": request, **get_stats(), "logs": logs})
+    context = create_translation_context(request, {"request": request, **get_stats(), "logs": logs})
+    return templates.TemplateResponse(request=request, name="logs.html", context=context)
 
 @app.get("/network")
 @app.get("/networks")
@@ -303,7 +361,8 @@ async def networks_page(request: Request):
             "installed": installed,
             "active": active,
         })
-    return templates.TemplateResponse(request=request, name="networks.html", context={"request": request, **get_stats(), "services": services})
+    context = create_translation_context(request, {"request": request, **get_stats(), "services": services})
+    return templates.TemplateResponse(request=request, name="networks.html", context=context)
 
 @app.get("/vpns")
 @app.get("/vpn")
@@ -325,7 +384,8 @@ async def vpns_page(request: Request):
             "installed": installed,
             "active": active,
         })
-    return templates.TemplateResponse(request=request, name="vpns.html", context={"request": request, **get_stats(), "services": services})
+    context = create_translation_context(request, {"request": request, **get_stats(), "services": services})
+    return templates.TemplateResponse(request=request, name="vpns.html", context=context)
 
 
 def lookup_service(service_key: str):
@@ -446,7 +506,7 @@ async def service_page(request: Request, service_key: str):
     installed = is_package_installed(service["package"])
     active = is_service_active(service["service"]) if installed else False
     category = "network" if service_key in {"dhcp-server", "ethernet"} else "vpn"
-    context = {
+    base_context = {
         "request": request,
         **get_stats(),
         "service_key": service_key,
@@ -460,6 +520,7 @@ async def service_page(request: Request, service_key: str):
         "ocserv_users": get_ocserv_users() if service_key == "ocserv" else [],
         "ocserv_connections": get_ocserv_connected_users() if service_key == "ocserv" else []
     }
+    context = create_translation_context(request, base_context)
     return templates.TemplateResponse(request=request, name="service.html", context=context)
 
 @app.post("/service/{service_key}/manage")
@@ -1005,7 +1066,7 @@ async def service_config(request: Request, service_key: str):
     example_config = example_data.get("example_config", "# No example configuration available")
     install_steps = example_data.get("install_steps", "# No installation steps available")
 
-    return templates.TemplateResponse(request=request, name="config.html", context={
+    base_context = {
         "request": request,
         **get_stats(),
         "service_key": service_key,
@@ -1014,7 +1075,9 @@ async def service_config(request: Request, service_key: str):
         "config_content": config_content,
         "example_config": example_config,
         "install_steps": install_steps
-    })
+    }
+    context = create_translation_context(request, base_context)
+    return templates.TemplateResponse(request=request, name="config.html", context=context)
 
 @app.post("/service/{service_key}/config")
 async def save_service_config(service_key: str, config_content: str = Form(...)):
@@ -1114,6 +1177,14 @@ async def delete_backup(backup_name: str = Form(...)):
     return RedirectResponse(url="/admin?error=delete_failed", status_code=303)
 
 
+@app.post("/admin/change-language")
+async def change_language(request: Request, language: str = Form(...)):
+    if language in LANGUAGES:
+        set_user_language(request, language)
+        return RedirectResponse(url="/admin?success=language_changed", status_code=303)
+    return RedirectResponse(url="/admin?error=invalid_language", status_code=303)
+
+
 @app.post("/save-config")
 async def save_config(config_text: str = Form(...)):
     if os.path.exists("/etc/squid/squid.conf"):
@@ -1195,12 +1266,14 @@ async def admin_page(request: Request):
     
     backups = get_backups()
     
-    return templates.TemplateResponse(request=request, name="admin.html", context={
+    context = create_translation_context(request, {
         "request": request,
         **get_stats(),
         "backups": backups,
         "backup_count": len(backups)
     })
+    
+    return templates.TemplateResponse(request=request, name="admin.html", context=context)
 
 
 @app.post("/admin/change-password")
@@ -1258,4 +1331,3 @@ async def download_backup(backup_name: str, request: Request):
         return FileResponse(backup_path, filename=backup_name, media_type="application/gzip")
     
     return RedirectResponse("/admin", status_code=303)
-    
