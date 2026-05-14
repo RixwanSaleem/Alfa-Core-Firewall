@@ -1,58 +1,22 @@
-<!DOCTYPE html>
-<html lang="{{ get_user_language(request) }}" dir="{{ 'rtl' if get_user_language(request)=='ar' else 'ltr' }}">
-<head>
-    <title>AlfaCore - Network Services</title>
-    <style>
-        :root { --bg: #020617; --sidebar: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --muted: #64748b; --green: #10b981; --red: #f43f5e; --line: rgba(255, 255, 255, 0.05); }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
-        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--line); padding: 40px 24px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .logo { font-size: 24px; font-weight: 800; margin-bottom: 40px; color: white; text-decoration: none; display: block; }
-        .nav-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
-        .nav-link { color: var(--text); text-decoration: none; padding: 12px 16px; border-radius: 12px; font-size: 14px; margin-bottom: 8px; display: block; }
-        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.15); }
-        .content { flex-grow: 1; padding: 40px; overflow-y: auto; }
-        .page-title { font-size: 28px; margin-bottom: 30px; }
-        .grid { display: grid; gap: 25px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--line); }
-        .card h3 { margin-bottom: 12px; font-size: 18px; color: var(--accent); }
-        .card p { color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
-        .btn { display: inline-block; padding: 12px 18px; border-radius: 12px; background: var(--accent); color: white; text-decoration: none; font-weight: 700; }
-    </style>
-</head>
-<body>
-<div class="sidebar">
-    <a href="/" class="logo">ALFA<span>CORE</span></a>
-    <span class="nav-label">{{ t(request, "sidebar_main") }}</span>
-    <a href="/" class="nav-link">{{ t(request, "nav_dashboard") }}</a>
-    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_services") }}</span>
-    <a href="/proxy" class="nav-link">{{ t(request, "nav_proxy") }}</a>
-    <a href="/firewall" class="nav-link">{{ t(request, "nav_firewall") }}</a>
-    <a href="/logs" class="nav-link">{{ t(request, "nav_logs") }}</a>
-    <a href="/network" class="nav-link active">{{ t(request, "nav_networks") }}</a>
-    <a href="/vpns" class="nav-link">{{ t(request, "nav_vpns") }}</a>
-    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_system") }}</span>
-    <a href="/system" class="nav-link">{{ t(request, "nav_system") }}</a>
-    <a href="/admin" class="nav-link">{{ t(request, "nav_admin") }}</a>
-    <div style="margin-top:auto;"><a href="/logout" class="nav-link" style="color:var(--red)">{{ t(request, "nav_logout") }}</a></div>
-</div>
-<div class="content">
-    <div class="page-title">Network Services</div>
-    <div class="grid">
-            {% for item in services %}
-            <div class="card">
-                <h3>{{ item.label }}</h3>
-                <p>{{ item.description }}</p>
-                <p style="margin-bottom:16px; color:var(--muted);">
-                    Status: <strong>{{ 'Installed' if item.installed else 'Not Installed' }}</strong> • <strong>{{ 'Active' if item.active else 'Inactive' }}</strong>
-                </p>
-                <div style="display:flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                    <a href="/service/{{ item.key }}" class="btn">Manage</a>
-                    <a href="/service/{{ item.key }}/config" class="btn" style="background: rgba(255,255,255,0.06); color: var(--text);">Config</a>
-                </div>
+{% extends "base.html" %}
+{% block title %}{{ t(request, "nav_networks") }} | AlfaCore{% endblock %}
+{% block page_title %}{{ t(request, "nav_networks") }}{% endblock %}
+{% block page_subtitle %}{{ t(request, "networks_title") }} · {{ t(request, "sidebar_services") }}{% endblock %}
+{% block content %}
+    <section class="cards-grid">
+        {% for item in services %}
+        <div class="card">
+            <div class="card-title">{{ item.label }}</div>
+            <div class="card-copy">{{ item.description }}</div>
+            <div class="status-row">
+                <span>{{ t(request, "dashboard_status") }}: <strong>{{ t(request, "dashboard_status_active") if item.active else t(request, "dashboard_status_inactive") }}</strong></span>
+                <span>{{ t(request, "dashboard_installed") }}: <strong>{{ t(request, "status_yes") if item.installed else t(request, "status_no") }}</strong></span>
             </div>
-            {% endfor %}
+            <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:14px;">
+                <a href="/service/{{ item.key }}" class="button button-primary">{{ t(request, "btn_manage") }}</a>
+                <a href="/service/{{ item.key }}/config" class="button button-ghost">{{ t(request, "btn_config") }}</a>
+            </div>
         </div>
-    </div>
-</body>
-</html>
+        {% endfor %}
+    </section>
+{% endblock %}
