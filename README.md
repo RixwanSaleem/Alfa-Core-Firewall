@@ -3,7 +3,7 @@
 A comprehensive FastAPI-based web administration interface for managing network services including Squid proxy, firewall rules, VPN services, and system settings on a Linux host.
 ## Demo
 
-<img src="assets/Demo-Vid.gif" width="800"/>
+<img src="assets/Demo-gif.gif" width="800"/>
 
 ## Project Overview
 
