@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ get_user_language(request) }}" dir="{{ 'rtl' if get_user_language(request)=='ar' else 'ltr' }}">
 <head>
     <title>AlfaCore - Administration</title>
     <style>
@@ -41,24 +41,27 @@
 <body>
 <div class="sidebar">
     <a href="/" class="logo">ALFA<span>CORE</span></a>
-    <span class="nav-label">Main Console</span>
-    <a href="/" class="nav-link">Dashboard</a>
-    <span class="nav-label" style="margin-top:20px;">Services</span>
-    <a href="/proxy" class="nav-link">Proxy Server</a>
-    <a href="/firewall" class="nav-link">Firewall</a>
-    <a href="/logs" class="nav-link">Access Logs</a>
-    <a href="/network" class="nav-link">Networks</a>
-    <a href="/vpns" class="nav-link">VPNs</a>
-    <span class="nav-label" style="margin-top:20px;">System</span>
-    <a href="/system" class="nav-link">System Settings</a>
-    <a href="/admin" class="nav-link active">Administration</a>
-    <div style="margin-top:auto;"><a href="/logout" class="nav-link" style="color:var(--red)">Logout</a></div>
+    <span class="nav-label">{{ t(request, "sidebar_main") }}</span>
+    <a href="/" class="nav-link">{{ t(request, "nav_dashboard") }}</a>
+    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_services") }}</span>
+    <a href="/proxy" class="nav-link">{{ t(request, "nav_proxy") }}</a>
+    <a href="/firewall" class="nav-link">{{ t(request, "nav_firewall") }}</a>
+    <a href="/logs" class="nav-link">{{ t(request, "nav_logs") }}</a>
+    <a href="/network" class="nav-link">{{ t(request, "nav_networks") }}</a>
+    <a href="/vpns" class="nav-link">{{ t(request, "nav_vpns") }}</a>
+    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_system") }}</span>
+    <a href="/system" class="nav-link">{{ t(request, "nav_system") }}</a>
+    <a href="/admin" class="nav-link active">{{ t(request, "nav_admin") }}</a>
+    <div style="margin-top:auto;"><a href="/logout" class="nav-link" style="color:var(--red)">{{ t(request, "nav_logout") }}</a></div>
 </div>
 <div class="content">
     <div class="page-title">🔐 Administration</div>
     
     {% if request.query_params.get('success') == 'password_changed' %}
     <div class="alert alert-success">✓ Admin password has been changed successfully</div>
+    {% endif %}
+    {% if request.query_params.get('success') == 'language_changed' %}
+    <div class="alert alert-success">✓ Language has been changed successfully</div>
     {% endif %}
     {% if request.query_params.get('success') == 'backup_created' %}
     <div class="alert alert-success">✓ Backup created successfully</div>
@@ -85,6 +88,9 @@
     {% if request.query_params.get('error') == 'delete_failed' %}
     <div class="alert alert-error">✗ Failed to delete backup</div>
     {% endif %}
+    {% if request.query_params.get('error') == 'invalid_language' %}
+    <div class="alert alert-error">✗ Invalid language selection</div>
+    {% endif %}
     
     <!-- Change Admin Password -->
     <div class="card">
@@ -103,6 +109,23 @@
                 <input type="password" name="confirm_password" required minlength="8">
             </div>
             <button type="submit" class="btn btn-green">Update Password</button>
+        </form>
+    </div>
+    
+    <!-- Change Language -->
+    <div class="card">
+        <div class="section-title">🌐 Change Language</div>
+        <p class="field">Select your preferred language for the administration interface.</p>
+        <form action="/admin/change-language" method="post">
+            <div class="form-group">
+                <label>Select Language</label>
+                <select name="language" required style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--text); font-size: 14px; width: 100%; margin-bottom: 12px;">
+                    {% for lang_code, lang_name in languages.items() %}
+                    <option value="{{ lang_code }}" {% if language == lang_code %}selected{% endif %}>{{ lang_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-blue">Change Language</button>
         </form>
     </div>
     
