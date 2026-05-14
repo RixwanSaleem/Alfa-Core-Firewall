@@ -4,7 +4,7 @@ A comprehensive FastAPI-based web administration interface for managing network 
 
 ## Project Overview
 
-AlfaCore Squid Panel provides a modern, user-friendly dashboard for managing:
+AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 ### Core Services
 - **Proxy Server** - Squid proxy configuration, user management, and traffic control
@@ -24,7 +24,17 @@ AlfaCore Squid Panel provides a modern, user-friendly dashboard for managing:
 - 📝 Configuration file editing with live previews
 - 🎨 Modern dark-themed responsive UI
 - 👥 User management for OCSERV VPN and proxy services
+- 🗣️ Multi languages
 
+## Languages
+
+English
+Español
+Français
+Deutsch
+Arabic
+中文
+ 
 ## Project Structure
 
 ```
