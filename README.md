@@ -30,7 +30,7 @@ AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 <p>
 <img src="assets/VPN-Services.png" width="30%"/>
-<img src="assets/Login-Page.png" width="30%"/>
+<img src="assets/Login.png" width="30%"/>
 </p>
 
 
