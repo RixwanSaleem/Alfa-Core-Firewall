@@ -3,6 +3,40 @@
 {% block page_title %}{{ t(request, "nav_networks") }}{% endblock %}
 {% block page_subtitle %}{{ t(request, "networks_title") }} · {{ t(request, "sidebar_services") }}{% endblock %}
 {% block content %}
+<style>
+    .interface-list { margin: 20px 0; }
+    .interface-item { 
+        background: #f5f5f5; 
+        border: 1px solid #ddd; 
+        border-radius: 4px; 
+        padding: 12px; 
+        margin: 10px 0; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+    }
+    .interface-info { flex: 1; }
+    .interface-name { font-weight: bold; font-size: 1.1em; }
+    .interface-details { font-size: 0.9em; color: #666; margin: 4px 0; }
+    .interface-actions { display: flex; gap: 8px; }
+    .form-group { margin: 12px 0; }
+    .form-group label { display: block; margin-bottom: 4px; font-weight: 500; }
+    .form-group input, .form-group select { width: 100%; max-width: 400px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+    .tabs { display: flex; gap: 10px; margin: 20px 0; border-bottom: 2px solid #ddd; }
+    .tab { cursor: pointer; padding: 10px 20px; border: none; background: none; font-size: 1em; color: #666; }
+    .tab.active { color: #333; border-bottom: 3px solid #007bff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+</style>
+
+<div class="tabs">
+    <button class="tab active" onclick="switchTab('services-tab')">{{ t(request, "tab_services") }}</button>
+    <button class="tab" onclick="switchTab('interfaces-tab')">{{ t(request, "tab_interfaces") }}</button>
+    <button class="tab" onclick="switchTab('noip-tab')">{{ t(request, "tab_noip") }}</button>
+</div>
+
+<!-- Services Tab -->
+<div id="services-tab" class="tab-content active">
     <section class="cards-grid">
         {% for item in services %}
         <div class="card">
@@ -19,4 +53,270 @@
         </div>
         {% endfor %}
     </section>
+</div>
+
+<!-- Network Interfaces Tab -->
+<div id="interfaces-tab" class="tab-content">
+    <h3>{{ t(request, "interfaces_title") }}</h3>
+    
+    <div class="interface-list" id="interface-list">
+        <p>{{ t(request, "loading") }}</p>
+    </div>
+    
+    <hr>
+    
+    <h4>{{ t(request, "interfaces_add_new") }}</h4>
+    <form id="add-interface-form" onsubmit="addInterface(event)">
+        <div class="form-group">
+            <label>{{ t(request, "interfaces_name") }}</label>
+            <input type="text" name="name" placeholder="e.g., eth0, eth1" required>
+        </div>
+        <div class="form-group">
+            <label>{{ t(request, "interfaces_type") }}</label>
+            <select name="interface_type" required>
+                <option value="">-- {{ t(request, "select_option") }} --</option>
+                <option value="wan">WAN (Internet)</option>
+                <option value="lan">LAN (Local)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>{{ t(request, "interfaces_bootproto") }}</label>
+            <select name="bootproto" onchange="toggleStaticConfig(this.value)" required>
+                <option value="">-- {{ t(request, "select_option") }} --</option>
+                <option value="dhcp">DHCP</option>
+                <option value="static">Static IP</option>
+            </select>
+        </div>
+        
+        <div id="static-config" style="display:none;">
+            <div class="form-group">
+                <label>{{ t(request, "interfaces_ipaddr") }}</label>
+                <input type="text" name="ipaddr" placeholder="192.168.1.100">
+            </div>
+            <div class="form-group">
+                <label>{{ t(request, "interfaces_prefix") }}</label>
+                <input type="text" name="prefix" placeholder="24 (0-32)">
+            </div>
+            <div class="form-group">
+                <label>{{ t(request, "interfaces_gateway") }}</label>
+                <input type="text" name="gateway" placeholder="192.168.1.1">
+            </div>
+            <div class="form-group">
+                <label>{{ t(request, "interfaces_dns1") }} ({{ t(request, "optional") }})</label>
+                <input type="text" name="dns1" placeholder="8.8.8.8">
+            </div>
+            <div class="form-group">
+                <label>{{ t(request, "interfaces_dns2") }} ({{ t(request, "optional") }})</label>
+                <input type="text" name="dns2" placeholder="8.8.4.4">
+            </div>
+        </div>
+        
+        <button type="submit" class="button button-primary">{{ t(request, "btn_add_interface") }}</button>
+    </form>
+    
+    <hr>
+    
+    <button onclick="applyAllInterfaces()" class="button button-success" style="margin-top: 20px;">{{ t(request, "btn_apply_config") }}</button>
+</div>
+
+<!-- NoIP.com Tab -->
+<div id="noip-tab" class="tab-content">
+    <h3>NoIP.com Dynamic DNS Client</h3>
+    <p>{{ t(request, "noip_description") }}</p>
+    
+    <form id="noip-form" onsubmit="saveNoIPConfig(event)">
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="enabled" id="noip-enabled" onchange="toggleNoIPConfig()">
+                Enable NoIP.com Client
+            </label>
+        </div>
+        
+        <div id="noip-config" style="display:none;">
+            <div class="form-group">
+                <label>{{ t(request, "noip_username") }}</label>
+                <input type="text" name="username" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label>{{ t(request, "noip_password") }}</label>
+                <input type="password" name="password" placeholder="Your NoIP password">
+            </div>
+            <div class="form-group">
+                <label>{{ t(request, "noip_hostname") }}</label>
+                <input type="text" name="hostname" placeholder="yourdomain.ddns.net">
+            </div>
+        </div>
+        
+        <button type="submit" class="button button-primary">{{ t(request, "btn_save") }}</button>
+    </form>
+</div>
+
+<script>
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+    
+    if (tabId === 'interfaces-tab') {
+        loadInterfaces();
+    } else if (tabId === 'noip-tab') {
+        loadNoIPConfig();
+    }
+}
+
+function toggleStaticConfig(value) {
+    document.getElementById('static-config').style.display = value === 'static' ? 'block' : 'none';
+}
+
+function toggleNoIPConfig() {
+    const enabled = document.getElementById('noip-enabled').checked;
+    document.getElementById('noip-config').style.display = enabled ? 'block' : 'none';
+}
+
+async function loadInterfaces() {
+    try {
+        const response = await fetch('/network-interfaces/api/list');
+        const data = await response.json();
+        displayInterfaces(data.interfaces);
+    } catch (error) {
+        console.error('Error loading interfaces:', error);
+    }
+}
+
+function displayInterfaces(interfaces) {
+    const container = document.getElementById('interface-list');
+    if (interfaces.length === 0) {
+        container.innerHTML = '<p>{{ t(request, "no_interfaces") }}</p>';
+        return;
+    }
+    
+    container.innerHTML = interfaces.map(iface => `
+        <div class="interface-item">
+            <div class="interface-info">
+                <div class="interface-name">${iface.name}</div>
+                <div class="interface-details">Type: ${iface.type.toUpperCase()} | Boot: ${iface.bootproto}</div>
+                ${iface.bootproto === 'static' ? `
+                    <div class="interface-details">IP: ${iface.ipaddr}/${iface.prefix} | GW: ${iface.gateway}</div>
+                ` : ''}
+            </div>
+            <div class="interface-actions">
+                <button onclick="editInterface('${iface.id}')" class="button button-ghost">{{ t(request, "btn_edit") }}</button>
+                <button onclick="deleteInterface('${iface.id}')" class="button button-danger">{{ t(request, "btn_delete") }}</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function addInterface(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/network-interfaces/api/add', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('{{ t(request, "interface_added") }}');
+            form.reset();
+            loadInterfaces();
+        } else {
+            alert('Error: ' + (data.errors ? data.errors.join(', ') : data.message));
+        }
+    } catch (error) {
+        alert('Error adding interface: ' + error);
+    }
+}
+
+async function deleteInterface(interfaceId) {
+    if (!confirm('{{ t(request, "confirm_delete") }}')) return;
+    
+    try {
+        const response = await fetch(`/network-interfaces/api/delete/${interfaceId}`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('{{ t(request, "interface_deleted") }}');
+            loadInterfaces();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        alert('Error deleting interface: ' + error);
+    }
+}
+
+async function applyAllInterfaces() {
+    if (!confirm('{{ t(request, "confirm_apply") }}')) return;
+    
+    try {
+        const response = await fetch('/network-interfaces/api/apply', {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('{{ t(request, "config_applied") }}');
+        } else {
+            alert('Error applying config');
+        }
+    } catch (error) {
+        alert('Error: ' + error);
+    }
+}
+
+async function loadNoIPConfig() {
+    try {
+        const response = await fetch('/network-interfaces/noip/config');
+        // Config is shown on the page
+    } catch (error) {
+        console.error('Error loading NoIP config:', error);
+    }
+}
+
+async function saveNoIPConfig(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/network-interfaces/noip/save', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert('{{ t(request, "config_saved") }}');
+        } else {
+            alert('Error saving configuration');
+        }
+    } catch (error) {
+        alert('Error: ' + error);
+    }
+}
+
+// Load interfaces when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if noip config should be pre-filled
+    const noipConfig = window.noipConfig;
+    if (noipConfig) {
+        if (noipConfig.enabled) {
+            document.getElementById('noip-enabled').checked = true;
+            document.getElementById('noip-config').style.display = 'block';
+            document.querySelector('input[name="username"]').value = noipConfig.username || '';
+            document.querySelector('input[name="hostname"]').value = noipConfig.hostname || '';
+        }
+    }
+});
+</script>
+
+<script>
+    window.noipConfig = {{ noip_config|tojson }};
+</script>
 {% endblock %}
