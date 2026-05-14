@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ get_user_language(request) }}" dir="{{ 'rtl' if get_user_language(request)=='ar' else 'ltr' }}">
 <head>
     <title>AlfaCore - Dashboard</title>
     <style>
@@ -35,19 +35,19 @@
 <body>
 <div class="sidebar">
     <a href="/" class="logo">ALFA<span>CORE</span></a>
-    <a href="/" class="nav-link active"><span class="nav-icon">📊</span> Dashboard</a>
-    <a href="/proxy" class="nav-link"><span class="nav-icon">🌐</span> Proxy</a>
-    <a href="/firewall" class="nav-link"><span class="nav-icon">🔥</span> Firewall</a>
-    <a href="/logs" class="nav-link"><span class="nav-icon">📋</span> Logs</a>
-    <a href="/network" class="nav-link"><span class="nav-icon">🌍</span> Networks</a>
-    <a href="/vpns" class="nav-link"><span class="nav-icon">🔐</span> VPNs</a>
-    <span class="nav-label" style="margin-top:20px;">System</span>
+    <a href="/" class="nav-link active"><span class="nav-icon">𓃑</span> Dashboard</a>
+    <a href="/proxy" class="nav-link"><span class="nav-icon">🕸️</span> Proxy</a>
+    <a href="/firewall" class="nav-link"><span class="nav-icon">🛡️</span> Firewall</a>
+    <a href="/logs" class="nav-link"><span class="nav-icon">📑</span> Logs</a>
+    <a href="/network" class="nav-link"><span class="nav-icon">🌐</span> Networks</a>
+    <a href="/vpns" class="nav-link"><span class="nav-icon">🛜</span> VPNs</a>
+    <span class="nav-label" style="margin-top:20px;">{{ t(request, "sidebar_system") }}</span>
     <a href="/system" class="nav-link"><span class="nav-icon">⚙️</span> System Settings</a>
-    <a href="/admin" class="nav-link"><span class="nav-icon">🔑</span> Administration</a>
+    <a href="/admin" class="nav-link"><span class="nav-icon">🏢</span> Administration</a>
     <div class="sidebar-footer">
-        <button class="theme-toggle" onclick="toggleTheme()">🌙 Theme</button>
+        <button class="theme-toggle" onclick="toggleTheme()">💡 Theme</button>
         <form action="/logout" method="get" style="display:contents;">
-            <button type="submit" class="logout-btn">🚪 Logout</button>
+            <button type="submit" class="logout-btn">🏃🚪 Logout</button>
         </form>
     </div>
 </div>
@@ -68,7 +68,7 @@
         </div>
         <div class="card">
             <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                <strong>Firewall</strong>
+                <strong>{{ t(request, "nav_firewall") }}</strong>
                 <span class="status-pill {{ 'pill-green' if fw_active else 'pill-red' }}">
                     {{ 'Active' if fw_active else 'Disabled' }}
                 </span>
