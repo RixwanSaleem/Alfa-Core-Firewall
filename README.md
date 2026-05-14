@@ -8,6 +8,9 @@ AlfaCore Panel provides a modern, user-friendly dashboard for managing:
 
 ## Example Pictures
 
+
+
+
 <p>
 <img src="assets/Dashboard.png" width="30%"/>
 <img src="assets/Administration.png" width="30%"/>
