@@ -44,6 +44,15 @@ TRANSLATIONS = {
         "dashboard_installed": "Installed",
         "dashboard_status_active": "Active",
         "dashboard_status_inactive": "Inactive",
+        "dashboard_total_services": "Total Services",
+        "dashboard_total_services_desc": "Total managed services on this host.",
+        "dashboard_active_services": "Active Services",
+        "dashboard_active_services_desc": "Services currently running.",
+        "dashboard_proxy_connections": "Proxy Connections",
+        "dashboard_proxy_connections_desc": "Live active proxy sessions.",
+        "dashboard_firewall_status": "Firewall Status",
+        "dashboard_health_overview": "System Health Overview",
+        "dashboard_service_status": "Service Status",
         
         # Proxy Server
         "proxy_title": "Proxy Server",
@@ -107,6 +116,7 @@ TRANSLATIONS = {
         "system_packages": "Installed Packages",
         "system_search": "Search Packages",
         "system_search_btn": "Search",
+        "system_search_help": "Search package repositories and install directly from results.",
         "system_install": "Install Package",
         "system_install_btn": "Install",
         "system_remove": "Remove Package",
@@ -137,6 +147,11 @@ TRANSLATIONS = {
         "service_config": "Configuration File",
         "service_example": "Example Configuration",
         "service_install_steps": "Installation Steps",
+        "service_config_prompt": "Edit the configuration file below and save your changes.",
+        "service_example_help": "Use this example configuration as a starting point.",
+        "service_install_steps_help": "Follow these setup steps to install and configure this service.",
+        "config_path": "Configuration Path",
+        "config_file_content": "Configuration Content",
         "service_save": "Save Configuration",
         "service_installed": "Installed",
         "service_not_installed": "Not Installed",
@@ -163,9 +178,14 @@ TRANSLATIONS = {
         "btn_cancel": "Cancel",
         "btn_delete": "Delete",
         "btn_confirm": "Confirm",
+        "btn_manage": "Manage",
+        "btn_config": "Config",
+        "btn_theme": "Theme",
         "btn_close": "Close",
         "btn_edit": "Edit",
         "btn_view": "View",
+        "status_yes": "Yes",
+        "status_no": "No",
         "confirm_delete": "Are you sure you want to delete this?",
         "confirm_restart": "This will restart the service. Continue?",
         "confirm_update": "Install all available updates? This may take several minutes.",
@@ -202,6 +222,15 @@ TRANSLATIONS = {
         "dashboard_installed": "Instalado",
         "dashboard_status_active": "Activo",
         "dashboard_status_inactive": "Inactivo",
+        "dashboard_total_services": "Servicios Totales",
+        "dashboard_total_services_desc": "Servicios gestionados en este host.",
+        "dashboard_active_services": "Servicios Activos",
+        "dashboard_active_services_desc": "Servicios actualmente en ejecución.",
+        "dashboard_proxy_connections": "Conexiones Proxy",
+        "dashboard_proxy_connections_desc": "Sesiones proxy activas en vivo.",
+        "dashboard_firewall_status": "Estado del Firewall",
+        "dashboard_health_overview": "Resumen de Salud del Sistema",
+        "dashboard_service_status": "Estado del Servicio",
         
         # Proxy Server
         "proxy_title": "Servidor Proxy",
@@ -229,6 +258,7 @@ TRANSLATIONS = {
         "system_packages": "Paquetes Instalados",
         "system_search": "Buscar Paquetes",
         "system_search_btn": "Buscar",
+        "system_search_help": "Buscar en los repositorios de paquetes e instalar directamente desde los resultados.",
         "system_install": "Instalar Paquete",
         "system_install_btn": "Instalar",
         "system_remove": "Eliminar Paquete",
@@ -259,6 +289,11 @@ TRANSLATIONS = {
         "btn_cancel": "Cancelar",
         "btn_delete": "Eliminar",
         "btn_confirm": "Confirmar",
+        "btn_manage": "Administrar",
+        "btn_config": "Configuración",
+        "btn_theme": "Tema",
+        "status_yes": "Sí",
+        "status_no": "No",
     },
     
     "fr": {
@@ -292,6 +327,15 @@ TRANSLATIONS = {
         "dashboard_installed": "Installé",
         "dashboard_status_active": "Actif",
         "dashboard_status_inactive": "Inactif",
+        "dashboard_total_services": "Services Totaux",
+        "dashboard_total_services_desc": "Services gérés sur cet hôte.",
+        "dashboard_active_services": "Services Actifs",
+        "dashboard_active_services_desc": "Services en cours d'exécution.",
+        "dashboard_proxy_connections": "Connexions Proxy",
+        "dashboard_proxy_connections_desc": "Sessions proxy actives en direct.",
+        "dashboard_firewall_status": "État du Pare-feu",
+        "dashboard_health_overview": "Aperçu de l'État du Système",
+        "dashboard_service_status": "État du Service",
         
         # Proxy Server
         "proxy_title": "Serveur Proxy",
@@ -319,6 +363,7 @@ TRANSLATIONS = {
         "system_packages": "Paquets Installés",
         "system_search": "Rechercher Paquets",
         "system_search_btn": "Rechercher",
+        "system_search_help": "Recherchez dans les dépôts de paquets et installez directement depuis les résultats.",
         "system_install": "Installer Paquet",
         "system_install_btn": "Installer",
         "system_remove": "Supprimer Paquet",
@@ -349,6 +394,11 @@ TRANSLATIONS = {
         "btn_cancel": "Annuler",
         "btn_delete": "Supprimer",
         "btn_confirm": "Confirmer",
+        "btn_manage": "Gérer",
+        "btn_config": "Configurer",
+        "btn_theme": "Thème",
+        "status_yes": "Oui",
+        "status_no": "Non",
     },
     
     "de": {
@@ -382,6 +432,15 @@ TRANSLATIONS = {
         "dashboard_installed": "Installiert",
         "dashboard_status_active": "Aktiv",
         "dashboard_status_inactive": "Inaktiv",
+        "dashboard_total_services": "Gesamte Dienste",
+        "dashboard_total_services_desc": "Verwaltete Dienste auf diesem Host.",
+        "dashboard_active_services": "Aktive Dienste",
+        "dashboard_active_services_desc": "Derzeit ausgeführte Dienste.",
+        "dashboard_proxy_connections": "Proxy-Verbindungen",
+        "dashboard_proxy_connections_desc": "Live aktive Proxy-Sitzungen.",
+        "dashboard_firewall_status": "Firewall-Status",
+        "dashboard_health_overview": "Systemzustandsübersicht",
+        "dashboard_service_status": "Dienststatus",
         
         # System Settings
         "system_title": "Systemeinstellungen",
@@ -391,6 +450,7 @@ TRANSLATIONS = {
         "system_packages": "Installierte Pakete",
         "system_search": "Pakete durchsuchen",
         "system_search_btn": "Suchen",
+        "system_search_help": "Durchsuchen Sie Paket-Repositories und installieren Sie direkt aus den Ergebnissen.",
         "system_install": "Paket installieren",
         "system_install_btn": "Installieren",
         "system_remove": "Paket entfernen",
@@ -421,6 +481,11 @@ TRANSLATIONS = {
         "btn_cancel": "Abbrechen",
         "btn_delete": "Löschen",
         "btn_confirm": "Bestätigen",
+        "btn_manage": "Verwalten",
+        "btn_config": "Konfigurieren",
+        "btn_theme": "Thema",
+        "status_yes": "Ja",
+        "status_no": "Nein",
     },
     
     "ar": {
@@ -463,6 +528,7 @@ TRANSLATIONS = {
         "system_packages": "الحزم المثبتة",
         "system_search": "البحث عن الحزم",
         "system_search_btn": "بحث",
+        "system_search_help": "ابحث في مستودعات الحزم وقم بالتثبيت مباشرة من النتائج.",
         "system_install": "تثبيت الحزمة",
         "system_install_btn": "تثبيت",
         "system_remove": "إزالة الحزمة",
@@ -493,6 +559,11 @@ TRANSLATIONS = {
         "btn_cancel": "إلغاء",
         "btn_delete": "حذف",
         "btn_confirm": "تأكيد",
+        "btn_manage": "إدارة",
+        "btn_config": "التكوين",
+        "btn_theme": "الوضع",
+        "status_yes": "نعم",
+        "status_no": "لا",
     },
     
     "zh": {
@@ -535,6 +606,7 @@ TRANSLATIONS = {
         "system_packages": "已安装的软件包",
         "system_search": "搜索软件包",
         "system_search_btn": "搜索",
+        "system_search_help": "搜索软件包存储库并直接从结果中安装。",
         "system_install": "安装软件包",
         "system_install_btn": "安装",
         "system_remove": "删除软件包",
@@ -565,6 +637,11 @@ TRANSLATIONS = {
         "btn_cancel": "取消",
         "btn_delete": "删除",
         "btn_confirm": "确认",
+        "btn_manage": "管理",
+        "btn_config": "配置",
+        "btn_theme": "主题",
+        "status_yes": "是",
+        "status_no": "否",
     }
 }
 
@@ -585,6 +662,10 @@ def get_translation(language: str, key: str, default: str = None) -> str:
     
     if key in TRANSLATIONS[language]:
         return TRANSLATIONS[language][key]
+
+    # Fall back to English when a translation is missing
+    if language != "en" and key in TRANSLATIONS["en"]:
+        return TRANSLATIONS["en"][key]
     
     if default:
         return default
