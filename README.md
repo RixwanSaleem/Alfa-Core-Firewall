@@ -2,6 +2,14 @@
 
 A FastAPI-based web administration UI for managing network services on Linux, including Squid proxy, firewall rules, VPN services, network interfaces, and system settings.
 
+## Docker Pull
+docker pull malikchand/alfa-core-firewall-panel:latest
+## Run with Docker
+
+docker pull malikchand/alfa-core-firewall-panel:latest
+docker run -p 8080:8080 malikchand/alfa-core-firewall-panel:latest
+
+
 ## Demo
 
 <img src="assets/Demo-Vid.gif" width="800"/>
