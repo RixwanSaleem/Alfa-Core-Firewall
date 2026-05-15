@@ -8,7 +8,9 @@ docker pull malikchand/alfa-core-firewall-panel:latest
 
 docker pull malikchand/alfa-core-firewall-panel:latest
 docker run -p 8080:8080 malikchand/alfa-core-firewall-panel:latest
-
+Default Login
+admin
+password
 
 ## Demo
 
