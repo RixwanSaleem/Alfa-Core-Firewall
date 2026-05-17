@@ -24,6 +24,7 @@ TRANSLATIONS = {
         "nav_logs": "Access Logs",
         "nav_networks": "Networks",
         "nav_vpns": "VPNs",
+        "nav_docker": "Docker",
         "nav_system": "System Settings",
         "nav_admin": "Administration",
         "nav_logout": "Logout",
@@ -54,6 +55,14 @@ TRANSLATIONS = {
         "dashboard_health_overview": "System Health Overview",
         "dashboard_service_status": "Service Status",
         
+        # Docker
+        "docker_title": "Docker Management",
+        "docker_status_help": "Manage the Docker daemon and container lifecycle.",
+        "docker_containers": "Docker Containers",
+        "docker_no_containers": "No Docker containers found.",
+        "docker_not_installed": "Docker is not installed or not available.",
+        "docker_container_actions": "Container Actions",
+        
         # Proxy Server
         "proxy_title": "Proxy Server",
         "proxy_connections": "Active Connections",
@@ -81,12 +90,30 @@ TRANSLATIONS = {
         "firewall_enable": "Enable Firewall",
         "firewall_disable": "Disable Firewall",
         "firewall_restart": "Restart Firewall",
+        "firewall_zones": "Firewall Zones",
+        "firewall_zones_help": "Assign interfaces to firewall zones for zone-based segmentation.",
+        "firewall_zone": "Zone",
+        "firewall_interface": "Interface",
+        "firewall_add_interface": "Add to Zone",
+        "firewall_remove_interface": "Remove from Zone",
+        "firewall_no_interfaces": "No interfaces assigned",
         
         # Networks
         "networks_title": "Network Configuration",
         "networks_dhcp": "DHCP Server",
         "networks_ethernet": "Ethernet",
         "networks_config": "Configuration",
+        "tab_routing": "Routing",
+        "routing_title": "Routing",
+        "routing_description": "Manage static network routes.",
+        "routing_destination": "Destination",
+        "routing_gateway": "Gateway",
+        "routing_interface": "Interface",
+        "routing_metric": "Metric",
+        "routing_add_route": "Add Route",
+        "routing_current_routes": "Current Routes",
+        "routing_no_routes": "No routes configured.",
+        "routing_route_added": "Route added successfully",
         
         # VPNs
         "vpns_title": "VPN Services",
@@ -125,6 +152,9 @@ TRANSLATIONS = {
         "system_installed_count": "Total Packages",
         "system_install_all": "Install All Updates",
         "system_uptodate": "System is up to date",
+        "system_reboot": "System Reboot",
+        "system_reboot_help": "Restart the system immediately.",
+        "system_reboot_btn": "Reboot",
         
         # Administration
         "admin_title": "Administration",
@@ -155,6 +185,11 @@ TRANSLATIONS = {
         "service_save": "Save Configuration",
         "service_installed": "Installed",
         "service_not_installed": "Not Installed",
+        "service_start": "Start",
+        "service_stop": "Stop",
+        "service_restart": "Restart",
+        "service_enable": "Enable",
+        "service_disable": "Disable",
         
         # Alerts and Messages
         "alert_success": "Success",
@@ -263,6 +298,47 @@ TRANSLATIONS = {
         "dashboard_firewall_status": "Estado del Firewall",
         "dashboard_health_overview": "Resumen de Salud del Sistema",
         "dashboard_service_status": "Estado del Servicio",
+        
+        # Docker
+        "nav_docker": "Docker",
+        "docker_title": "Gestión de Docker",
+        "docker_status_help": "Gestiona el demonio de Docker y el ciclo de vida de los contenedores.",
+        "docker_containers": "Contenedores de Docker",
+        "docker_no_containers": "No se encontraron contenedores de Docker.",
+        "docker_not_installed": "Docker no está instalado o no disponible.",
+        "docker_container_actions": "Acciones del Contenedor",
+        
+        # Routing
+        "tab_routing": "Enrutamiento",
+        "routing_title": "Enrutamiento",
+        "routing_description": "Gestiona rutas de red estáticas.",
+        "routing_destination": "Destino",
+        "routing_gateway": "Puerta de Enlace",
+        "routing_interface": "Interfaz",
+        "routing_metric": "Métrica",
+        "routing_add_route": "Agregar Ruta",
+        "routing_current_routes": "Rutas Actuales",
+        "routing_no_routes": "Sin rutas configuradas.",
+        "routing_route_added": "Ruta agregada correctamente",
+        
+        # Firewall Zones
+        "firewall_zones": "Zonas de Firewall",
+        "firewall_zones_help": "Asigna interfaces a zonas de firewall para segmentación basada en zonas.",
+        "firewall_zone": "Zona",
+        "firewall_interface": "Interfaz",
+        "firewall_add_interface": "Añadir a Zona",
+        "firewall_remove_interface": "Eliminar de Zona",
+        "firewall_no_interfaces": "Sin interfaces asignadas",
+        
+        # System
+        "system_reboot": "Reinicio del Sistema",
+        "system_reboot_help": "Reinicia el sistema inmediatamente.",
+        "system_reboot_btn": "Reiniciar",
+        
+        # Service Actions
+        "service_start": "Iniciar",
+        "service_stop": "Detener",
+        "service_restart": "Reiniciar",
         
         # Proxy Server
         "proxy_title": "Servidor Proxy",
@@ -401,6 +477,47 @@ TRANSLATIONS = {
         "dashboard_health_overview": "Aperçu de l'État du Système",
         "dashboard_service_status": "État du Service",
         
+        # Docker
+        "nav_docker": "Docker",
+        "docker_title": "Gestion Docker",
+        "docker_status_help": "Gérez le démon Docker et le cycle de vie des conteneurs.",
+        "docker_containers": "Conteneurs Docker",
+        "docker_no_containers": "Aucun conteneur Docker trouvé.",
+        "docker_not_installed": "Docker n'est pas installé ou non disponible.",
+        "docker_container_actions": "Actions du Conteneur",
+        
+        # Routing
+        "tab_routing": "Routage",
+        "routing_title": "Routage",
+        "routing_description": "Gérez les routes réseau statiques.",
+        "routing_destination": "Destination",
+        "routing_gateway": "Passerelle",
+        "routing_interface": "Interface",
+        "routing_metric": "Métrique",
+        "routing_add_route": "Ajouter une Route",
+        "routing_current_routes": "Routes Actuelles",
+        "routing_no_routes": "Aucune route configurée.",
+        "routing_route_added": "Route ajoutée avec succès",
+        
+        # Firewall Zones
+        "firewall_zones": "Zones Firewall",
+        "firewall_zones_help": "Attribuez des interfaces aux zones de pare-feu pour la segmentation basée sur les zones.",
+        "firewall_zone": "Zone",
+        "firewall_interface": "Interface",
+        "firewall_add_interface": "Ajouter à la Zone",
+        "firewall_remove_interface": "Supprimer de la Zone",
+        "firewall_no_interfaces": "Aucune interface attribuée",
+        
+        # System
+        "system_reboot": "Redémarrage Système",
+        "system_reboot_help": "Redémarrez le système immédiatement.",
+        "system_reboot_btn": "Redémarrer",
+        
+        # Service Actions
+        "service_start": "Démarrer",
+        "service_stop": "Arrêter",
+        "service_restart": "Redémarrer",
+        
         # Proxy Server
         "proxy_title": "Serveur Proxy",
         "proxy_connections": "Connexions Actives",
@@ -537,6 +654,47 @@ TRANSLATIONS = {
         "dashboard_firewall_status": "Firewall-Status",
         "dashboard_health_overview": "Systemzustandsübersicht",
         "dashboard_service_status": "Dienststatus",
+        
+        # Docker
+        "nav_docker": "Docker",
+        "docker_title": "Docker-Verwaltung",
+        "docker_status_help": "Verwalten Sie den Docker-Daemon und den Containerleben-zyklus.",
+        "docker_containers": "Docker-Container",
+        "docker_no_containers": "Keine Docker-Container gefunden.",
+        "docker_not_installed": "Docker ist nicht installiert oder nicht verfügbar.",
+        "docker_container_actions": "Container-Aktionen",
+        
+        # Routing
+        "tab_routing": "Routing",
+        "routing_title": "Routing",
+        "routing_description": "Verwalten Sie statische Netzwerkrouten.",
+        "routing_destination": "Ziel",
+        "routing_gateway": "Gateway",
+        "routing_interface": "Schnittstelle",
+        "routing_metric": "Metrik",
+        "routing_add_route": "Route Hinzufügen",
+        "routing_current_routes": "Aktuelle Routen",
+        "routing_no_routes": "Keine Routen konfiguriert.",
+        "routing_route_added": "Route erfolgreich hinzugefügt",
+        
+        # Firewall Zones
+        "firewall_zones": "Firewall-Zonen",
+        "firewall_zones_help": "Weisen Sie Schnittstellen Firewall-Zonen zu für zonenbasierte Segmentierung.",
+        "firewall_zone": "Zone",
+        "firewall_interface": "Schnittstelle",
+        "firewall_add_interface": "Zur Zone Hinzufügen",
+        "firewall_remove_interface": "Aus Zone Entfernen",
+        "firewall_no_interfaces": "Keine Schnittstellen zugewiesen",
+        
+        # System
+        "system_reboot": "Systemstart",
+        "system_reboot_help": "Starten Sie das System sofort neu.",
+        "system_reboot_btn": "Neustart",
+        
+        # Service Actions
+        "service_start": "Starten",
+        "service_stop": "Stoppen",
+        "service_restart": "Neu starten",
         
         # System Settings
         "system_title": "Systemeinstellungen",
@@ -724,6 +882,47 @@ TRANSLATIONS = {
         "noip_username": "بريد NoIP الإلكتروني",
         "noip_password": "كلمة مرور NoIP",
         "noip_hostname": "اسم مضيف NoIP",
+        
+        # Docker
+        "nav_docker": "Docker",
+        "docker_title": "إدارة Docker",
+        "docker_status_help": "إدارة خادم Docker وحياة دورة الحاويات.",
+        "docker_containers": "حاويات Docker",
+        "docker_no_containers": "لم يتم العثور على حاويات Docker.",
+        "docker_not_installed": "Docker غير مثبت أو غير متاح.",
+        "docker_container_actions": "إجراءات الحاوية",
+        
+        # Routing
+        "tab_routing": "التوجيه",
+        "routing_title": "التوجيه",
+        "routing_description": "إدارة مسارات الشبكة الثابتة.",
+        "routing_destination": "الوجهة",
+        "routing_gateway": "البوابة",
+        "routing_interface": "الواجهة",
+        "routing_metric": "المقياس",
+        "routing_add_route": "إضافة مسار",
+        "routing_current_routes": "المسارات الحالية",
+        "routing_no_routes": "لا توجد مسارات مكونة.",
+        "routing_route_added": "تمت إضافة المسار بنجاح",
+        
+        # Firewall Zones
+        "firewall_zones": "مناطق جدار الحماية",
+        "firewall_zones_help": "أسند الواجهات إلى مناطق جدار الحماية للتقسيم بناءً على المنطقة.",
+        "firewall_zone": "منطقة",
+        "firewall_interface": "واجهة",
+        "firewall_add_interface": "إضافة إلى منطقة",
+        "firewall_remove_interface": "إزالة من منطقة",
+        "firewall_no_interfaces": "لا توجد واجهات مسندة",
+        
+        # System
+        "system_reboot": "إعادة تشغيل النظام",
+        "system_reboot_help": "أعد تشغيل النظام فوراً.",
+        "system_reboot_btn": "إعادة تشغيل",
+        
+        # Service Actions
+        "service_start": "بدء التشغيل",
+        "service_stop": "إيقاف",
+        "service_restart": "إعادة تشغيل",
     },
     
     "zh": {
@@ -834,6 +1033,47 @@ TRANSLATIONS = {
         "noip_username": "NoIP邮箱",
         "noip_password": "NoIP密码",
         "noip_hostname": "NoIP主机名",
+        
+        # Docker
+        "nav_docker": "Docker",
+        "docker_title": "Docker 管理",
+        "docker_status_help": "管理 Docker 守护进程和容器生命周期。",
+        "docker_containers": "Docker 容器",
+        "docker_no_containers": "未找到 Docker 容器。",
+        "docker_not_installed": "Docker 未安装或不可用。",
+        "docker_container_actions": "容器操作",
+        
+        # Routing
+        "tab_routing": "路由",
+        "routing_title": "路由",
+        "routing_description": "管理静态网络路由。",
+        "routing_destination": "目标",
+        "routing_gateway": "网关",
+        "routing_interface": "接口",
+        "routing_metric": "度量",
+        "routing_add_route": "添加路由",
+        "routing_current_routes": "当前路由",
+        "routing_no_routes": "未配置路由。",
+        "routing_route_added": "路由添加成功",
+        
+        # Firewall Zones
+        "firewall_zones": "防火墙区域",
+        "firewall_zones_help": "将接口分配给防火墙区域以进行基于区域的分段。",
+        "firewall_zone": "区域",
+        "firewall_interface": "接口",
+        "firewall_add_interface": "添加到区域",
+        "firewall_remove_interface": "从区域删除",
+        "firewall_no_interfaces": "未分配接口",
+        
+        # System
+        "system_reboot": "系统重启",
+        "system_reboot_help": "立即重启系统。",
+        "system_reboot_btn": "重启",
+        
+        # Service Actions
+        "service_start": "开始",
+        "service_stop": "停止",
+        "service_restart": "重启",
     }
 }
 
