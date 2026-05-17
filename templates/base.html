@@ -170,6 +170,7 @@
         <span class="nav-label">{{ t(request, "sidebar_system") }}</span>
         <a href="/system" class="nav-link{% if request.url.path == '/system' %} active{% endif %}"><span class="nav-icon">⚙️</span>{{ t(request, "nav_system") }}</a>
         <a href="/admin" class="nav-link{% if request.url.path == '/admin' %} active{% endif %}"><span class="nav-icon">👤</span>{{ t(request, "nav_admin") }}</a>
+        <a href="/admin/certificates" class="nav-link{% if request.url.path == '/admin/certificates' %} active{% endif %}"><span class="nav-icon">🔐</span>{{ t(request, "nav_certificates") }}</a>
         <div class="sidebar-footer">
             <button type="button" class="button button-muted" onclick="toggleTheme()">💡 {{ t(request, "btn_theme") }}</button>
             <a href="/logout" class="button button-danger" style="text-align:center;">{{ t(request, "nav_logout") }}</a>
