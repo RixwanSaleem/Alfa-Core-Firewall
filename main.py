@@ -94,7 +94,14 @@ def run_cmd(cmd):
     clean_env.pop("PYTHONPATH", None)
     clean_env.pop("VIRTUAL_ENV", None)
     clean_env["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True, env=clean_env)
+    return subprocess.run(
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+        env=clean_env
+    )
 
 
 def run_cmd_input(cmd, input_text: str):
@@ -103,20 +110,174 @@ def run_cmd_input(cmd, input_text: str):
     clean_env.pop("VIRTUAL_ENV", None)
     clean_env["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     if isinstance(cmd, list):
-        return subprocess.run(cmd, capture_output=True, text=True, env=clean_env, input=input_text)
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True, env=clean_env, input=input_text)
+        return subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            env=clean_env,
+            input=input_text
+        )
+    return subprocess.run(
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+        env=clean_env,
+        input=input_text
+    )
 
 
 def safe_shell_arg(value: str) -> str:
     return shlex.quote(value or "")
 
 
+def command_exists(command: str) -> bool:
+    return shutil.which(command) is not None
+
+
+def detect_package_manager() -> str:
+    if command_exists("dnf"):
+        return "dnf"
+    if command_exists("yum"):
+        return "yum"
+    if command_exists("apt-get"):
+        return "apt"
+    if command_exists("apk"):
+        return "apk"
+    if command_exists("pacman"):
+        return "pacman"
+    if command_exists("zypper"):
+        return "zypper"
+    return None
+
+PACKAGE_MANAGER = detect_package_manager()
+
+
+def detect_service_manager() -> str:
+    if command_exists("systemctl"):
+        return "systemctl"
+    if command_exists("service"):
+        return "service"
+    return None
+
+SERVICE_MANAGER = detect_service_manager()
+
+
+def detect_firewall_tool() -> str:
+    if command_exists("firewall-cmd"):
+        return "firewalld"
+    if command_exists("ufw"):
+        return "ufw"
+    if command_exists("iptables"):
+        return "iptables"
+    return None
+
+FIREWALL_TOOL = detect_firewall_tool()
+
+
+def run_service_command(action: str, service_name: str):
+    service_name = safe_shell_arg(service_name)
+    if SERVICE_MANAGER == "systemctl":
+        return run_cmd(f"systemctl {action} {service_name}")
+    if SERVICE_MANAGER == "service":
+        return run_cmd(f"service {service_name} {action}")
+    return run_cmd("true")
+
+
+def pkg_install(package_name: str) -> subprocess.CompletedProcess:
+    safe_name = safe_shell_arg(package_name)
+    if PACKAGE_MANAGER == "dnf":
+        return run_cmd(f"dnf install -y {safe_name}")
+    if PACKAGE_MANAGER == "yum":
+        return run_cmd(f"yum install -y {safe_name}")
+    if PACKAGE_MANAGER == "apt":
+        return run_cmd(f"apt-get update -y && apt-get install -y {safe_name}")
+    if PACKAGE_MANAGER == "apk":
+        return run_cmd(f"apk add {safe_name}")
+    if PACKAGE_MANAGER == "pacman":
+        return run_cmd(f"pacman -S --noconfirm {safe_name}")
+    if PACKAGE_MANAGER == "zypper":
+        return run_cmd(f"zypper install -y {safe_name}")
+    return run_cmd("true")
+
+
+def pkg_remove(package_name: str) -> subprocess.CompletedProcess:
+    safe_name = safe_shell_arg(package_name)
+    if PACKAGE_MANAGER == "dnf":
+        return run_cmd(f"dnf remove -y {safe_name}")
+    if PACKAGE_MANAGER == "yum":
+        return run_cmd(f"yum remove -y {safe_name}")
+    if PACKAGE_MANAGER == "apt":
+        return run_cmd(f"apt-get remove -y {safe_name}")
+    if PACKAGE_MANAGER == "apk":
+        return run_cmd(f"apk del {safe_name}")
+    if PACKAGE_MANAGER == "pacman":
+        return run_cmd(f"pacman -R --noconfirm {safe_name}")
+    if PACKAGE_MANAGER == "zypper":
+        return run_cmd(f"zypper remove -y {safe_name}")
+    return run_cmd("true")
+
+
+def update_system() -> subprocess.CompletedProcess:
+    safe = lambda s: s
+    if PACKAGE_MANAGER in {"dnf", "yum"}:
+        return run_cmd(f"{PACKAGE_MANAGER} update -y")
+    if PACKAGE_MANAGER == "apt":
+        return run_cmd("apt-get update -y && apt-get upgrade -y")
+    if PACKAGE_MANAGER == "apk":
+        return run_cmd("apk upgrade")
+    if PACKAGE_MANAGER == "pacman":
+        return run_cmd("pacman -Syu --noconfirm")
+    if PACKAGE_MANAGER == "zypper":
+        return run_cmd("zypper update -y")
+    return run_cmd("true")
+
+
+def firewall_modify_port(action: str, port: str) -> subprocess.CompletedProcess:
+    safe_port = safe_shell_arg(port)
+    if FIREWALL_TOOL == "firewalld":
+        return run_cmd(f"firewall-cmd --{action}-port={safe_port} && firewall-cmd --permanent --{action}-port={safe_port} && firewall-cmd --reload")
+    if FIREWALL_TOOL == "ufw":
+        if action == "add":
+            return run_cmd(f"ufw allow {safe_port}")
+        else:
+            return run_cmd(f"ufw delete allow {safe_port}")
+    if FIREWALL_TOOL == "iptables":
+        parts = port.split('/')
+        port_num = parts[0]
+        proto = parts[1] if len(parts) > 1 else "tcp"
+        if action == "add":
+            return run_cmd(f"iptables -I INPUT -p {proto} --dport {port_num} -j ACCEPT")
+        else:
+            return run_cmd(f"iptables -D INPUT -p {proto} --dport {port_num} -j ACCEPT")
+    return run_cmd("true")
+
+
+def firewall_modify_interface_zone(action: str, zone: str, interface: str) -> subprocess.CompletedProcess:
+    safe_zone = safe_shell_arg(zone)
+    safe_interface = safe_shell_arg(interface)
+    if FIREWALL_TOOL == "firewalld":
+        if action == "add":
+            return run_cmd(f"firewall-cmd --permanent --zone={safe_zone} --add-interface={safe_interface} && firewall-cmd --reload")
+        else:
+            return run_cmd(f"firewall-cmd --permanent --zone={safe_zone} --remove-interface={safe_interface} && firewall-cmd --reload")
+    # UFW doesn't expose zones in the same way; no-op for other backends
+    return run_cmd("true")
+
+
 def get_stats():
-    is_installed = run_cmd("rpm -q squid").returncode == 0
+    squid_installed = is_package_installed("squid")
+    fw_active = False
+    if FIREWALL_TOOL == "firewalld":
+        fw_active = is_service_active("firewalld")
+    elif FIREWALL_TOOL == "ufw":
+        fw_active = run_cmd("ufw status | grep -q 'Status: active'").returncode == 0
     return {
-        "installed": is_installed,
-        "squid_active": run_cmd("systemctl is-active squid").stdout.strip() == "active",
-        "fw_active": run_cmd("systemctl is-active firewalld").stdout.strip() == "active",
+        "installed": squid_installed,
+        "squid_active": is_service_active("squid"),
+        "fw_active": fw_active,
         "uptime": run_cmd("uptime -p").stdout.strip(),
         "load": run_cmd("uptime | awk -F'load average:' '{ print $2 }'").stdout.strip()
     }
@@ -125,39 +286,121 @@ def get_stats():
 # System Management Functions
 def get_system_updates():
     """Get available system updates"""
-    result = run_cmd("dnf check-update 2>/dev/null | grep -v '^$' | tail -n +1")
     updates = []
-    if result.returncode == 100:  # dnf returns 100 when updates are available
+    if PACKAGE_MANAGER == "dnf":
+        result = run_cmd("dnf check-update 2>/dev/null | grep -v '^$' | tail -n +1")
+        if result.returncode == 100:
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        updates.append({
+                            'package': parts[0],
+                            'new_version': parts[1],
+                            'repo': ' '.join(parts[2:])
+                        })
+    elif PACKAGE_MANAGER == "yum":
+        result = run_cmd("yum check-update 2>/dev/null | grep -v '^$' | tail -n +1")
+        if result.returncode == 100:
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        updates.append({
+                            'package': parts[0],
+                            'new_version': parts[1],
+                            'repo': ' '.join(parts[2:])
+                        })
+    elif PACKAGE_MANAGER == "apt":
+        result = run_cmd("apt list --upgradable 2>/dev/null | tail -n +2")
+        for line in result.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split('/')
+                if len(parts) >= 2:
+                    pkg = parts[0]
+                    rest = ' '.join(line.split()[1:])
+                    updates.append({
+                        'package': pkg,
+                        'new_version': rest,
+                        'repo': ''
+                    })
+    elif PACKAGE_MANAGER == "apk":
+        result = run_cmd("apk version -l '<' 2>/dev/null | head -50")
         for line in result.stdout.strip().split('\n'):
             if line.strip():
                 parts = line.split()
-                if len(parts) >= 3:
+                updates.append({
+                    'package': parts[0],
+                    'new_version': parts[1] if len(parts) > 1 else '',
+                    'repo': ''
+                })
+    elif PACKAGE_MANAGER == "pacman":
+        result = run_cmd("pacman -Qu 2>/dev/null | head -50")
+        for line in result.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split()
+                updates.append({
+                    'package': parts[0],
+                    'new_version': parts[1] if len(parts) > 1 else '',
+                    'repo': ''
+                })
+    elif PACKAGE_MANAGER == "zypper":
+        result = run_cmd("zypper list-updates 2>/dev/null | tail -n +1")
+        for line in result.stdout.strip().split('\n'):
+            if line.strip() and not line.startswith('Repository'):
+                parts = line.split()
+                if len(parts) >= 5:
                     updates.append({
-                        'package': parts[0],
-                        'new_version': parts[1],
-                        'repo': ' '.join(parts[2:])
+                        'package': parts[2],
+                        'new_version': parts[3],
+                        'repo': parts[4]
                     })
     return updates
 
 
 def get_last_update_time():
-    """Get timestamp of last dnf transaction"""
-    result = run_cmd("dnf history info 2>/dev/null | grep 'Begin Time' | head -1")
-    if result.returncode == 0:
-        return result.stdout.strip()
+    """Get timestamp of last package manager transaction"""
+    if PACKAGE_MANAGER in {"dnf", "yum"}:
+        result = run_cmd(f"{PACKAGE_MANAGER} history info 2>/dev/null | grep 'Begin Time' | head -1")
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    elif PACKAGE_MANAGER == "apt":
+        history_file = "/var/log/apt/history.log"
+        if os.path.exists(history_file):
+            return datetime.fromtimestamp(Path(history_file).stat().st_mtime).isoformat()
     return "Never"
 
 
 def search_packages(query: str):
     """Search for packages"""
     safe_query = safe_shell_arg(query)
-    result = run_cmd(f"dnf search {safe_query} 2>/dev/null | head -50")
+    if PACKAGE_MANAGER in {"dnf", "yum"}:
+        result = run_cmd(f"{PACKAGE_MANAGER} search {safe_query} 2>/dev/null | head -50")
+    elif PACKAGE_MANAGER == "apt":
+        result = run_cmd(f"apt-cache search {safe_query} 2>/dev/null | head -50")
+    elif PACKAGE_MANAGER == "apk":
+        result = run_cmd(f"apk search {safe_query} 2>/dev/null | head -50")
+    elif PACKAGE_MANAGER == "pacman":
+        result = run_cmd(f"pacman -Ss {safe_query} 2>/dev/null | head -50")
+    elif PACKAGE_MANAGER == "zypper":
+        result = run_cmd(f"zypper search {safe_query} 2>/dev/null | head -50")
+    else:
+        return "Package search not supported on this platform."
     return result.stdout
 
 
 def get_installed_packages():
     """Get list of installed packages"""
-    result = run_cmd("rpm -qa --qf '[%{NAME}\\n]' | sort")
+    if PACKAGE_MANAGER in {"dnf", "yum", "zypper"}:
+        result = run_cmd("rpm -qa --qf '[%{NAME}\n]' | sort")
+    elif PACKAGE_MANAGER == "apt":
+        result = run_cmd("dpkg-query -W -f='${Package}\n' | sort")
+    elif PACKAGE_MANAGER == "apk":
+        result = run_cmd("apk info | sort")
+    elif PACKAGE_MANAGER == "pacman":
+        result = run_cmd("pacman -Qq | sort")
+    else:
+        result = run_cmd("true")
     packages = result.stdout.strip().split('\n') if result.stdout else []
     return packages[:500]  # Return first 500 for UI performance
 
@@ -170,6 +413,30 @@ def get_update_status():
         "updates": updates,
         "last_update": get_last_update_time()
     }
+
+
+def get_firewall_info():
+    """Get firewall ports and zone mapping for supported firewall backends"""
+    open_ports = []
+    zones = []
+    zone_interfaces = {}
+    if FIREWALL_TOOL == "firewalld":
+        ports = run_cmd("firewall-cmd --list-ports").stdout.strip()
+        zones = run_cmd("firewall-cmd --get-zones").stdout.strip().split()
+        for zone in zones:
+            result = run_cmd(f"firewall-cmd --zone={safe_shell_arg(zone)} --list-interfaces")
+            zone_interfaces[zone] = result.stdout.strip().split() if result.returncode == 0 else []
+        open_ports = ports.split() if ports else []
+    elif FIREWALL_TOOL == "ufw":
+        status = run_cmd("ufw status numbered").stdout.strip().splitlines()
+        for line in status:
+            if line and line[0].isdigit():
+                parts = line.split()
+                if len(parts) > 2:
+                    open_ports.append(parts[2])
+        zones = []
+        zone_interfaces = {}
+    return open_ports, zones, zone_interfaces
 
 
 def read_env_file():
@@ -468,7 +735,7 @@ def create_translation_context(request: Request, base_context: dict) -> dict:
 @app.get("/login")
 async def login_page(request: Request):
     context = create_translation_context(request, {"request": request})
-    return templates.TemplateResponse(request=request, name="login.html", context=context)
+    return templates.TemplateResponse("login.html", context=context)
 
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -496,7 +763,7 @@ async def dashboard(request: Request):
                 "active": is_service_active(service["service"])
             })
     context = create_translation_context(request, {"request": request, **get_stats(), "connections": conns, "installed_services": installed_services})
-    return templates.TemplateResponse(request=request, name="dashboard.html", context=context)
+    return templates.TemplateResponse("dashboard.html", context=context)
 
 @app.get("/proxy")
 async def proxy_page(request: Request):
@@ -509,28 +776,23 @@ async def proxy_page(request: Request):
             users = [line.split(":")[0] for line in f if ":" in line]
     config = Path("/etc/squid/squid.conf").read_text() if os.path.exists("/etc/squid/squid.conf") else ""
     context = create_translation_context(request, {"request": request, **stats, "proxy_users": users, "config": config})
-    return templates.TemplateResponse(request=request, name="proxy.html", context=context)
+    return templates.TemplateResponse("proxy.html", context=context)
 
 @app.get("/firewall")
 async def firewall_page(request: Request):
     if not request.session.get("logged_in"):
         return RedirectResponse("/login")
-    ports = run_cmd("firewall-cmd --list-ports").stdout.strip()
-    zones = run_cmd("firewall-cmd --get-zones").stdout.strip().split()
-    zone_interfaces = {}
-    for zone in zones:
-        result = run_cmd(f"firewall-cmd --zone={safe_shell_arg(zone)} --list-interfaces")
-        zone_interfaces[zone] = result.stdout.strip().split() if result.returncode == 0 else []
+    open_ports, zones, zone_interfaces = get_firewall_info()
     available_interfaces = get_system_interfaces()
     context = create_translation_context(request, {
         "request": request,
         **get_stats(),
-        "open_ports": ports.split(),
+        "open_ports": open_ports,
         "zones": zones,
         "zone_interfaces": zone_interfaces,
         "available_interfaces": available_interfaces
     })
-    return templates.TemplateResponse(request=request, name="firewall.html", context=context)
+    return templates.TemplateResponse("firewall.html", context=context)
 
 @app.get("/logs")
 async def logs_page(request: Request):
@@ -538,7 +800,7 @@ async def logs_page(request: Request):
         return RedirectResponse("/login")
     logs = run_cmd("tail -n 100 /var/log/squid/access.log").stdout
     context = create_translation_context(request, {"request": request, **get_stats(), "logs": logs})
-    return templates.TemplateResponse(request=request, name="logs.html", context=context)
+    return templates.TemplateResponse("logs.html", context=context)
 
 @app.get("/network")
 @app.get("/networks")
@@ -569,7 +831,7 @@ async def networks_page(request: Request):
         "noip_config": noip_config,
         "available_interfaces": available_interfaces
     })
-    return templates.TemplateResponse(request=request, name="networks.html", context=context)
+    return templates.TemplateResponse("networks.html", context=context)
 
 @app.get("/vpns")
 @app.get("/vpn")
@@ -592,7 +854,7 @@ async def vpns_page(request: Request):
             "active": active,
         })
     context = create_translation_context(request, {"request": request, **get_stats(), "services": services})
-    return templates.TemplateResponse(request=request, name="vpns.html", context=context)
+    return templates.TemplateResponse("vpns.html", context=context)
 
 
 @app.get("/docker")
@@ -609,7 +871,7 @@ async def docker_page(request: Request):
         "active": active,
         "containers": containers
     })
-    return templates.TemplateResponse(request=request, name="docker.html", context=context)
+    return templates.TemplateResponse("docker.html", context=context)
 
 
 @app.post("/docker/manage")
@@ -617,7 +879,7 @@ async def manage_docker(request: Request, action: str = Form(...)):
     if not request.session.get("logged_in"):
         return RedirectResponse("/login")
     if action in {"start", "stop", "restart"}:
-        run_cmd(f"systemctl {action} docker")
+        run_service_command(action, "docker")
     return RedirectResponse(url="/docker", status_code=303)
 
 
@@ -636,11 +898,27 @@ def lookup_service(service_key: str):
 
 
 def is_package_installed(package_name: str) -> bool:
-    return run_cmd(f"rpm -q {safe_shell_arg(package_name)}").returncode == 0
+    safe_name = safe_shell_arg(package_name)
+    if PACKAGE_MANAGER in {"dnf", "yum", "zypper"}:
+        return run_cmd(f"rpm -q {safe_name}").returncode == 0
+    if PACKAGE_MANAGER == "apt":
+        result = run_cmd(f"dpkg-query -W -f='${{Status}}' {safe_name} 2>/dev/null")
+        return result.returncode == 0 and "install ok installed" in result.stdout
+    if PACKAGE_MANAGER == "apk":
+        return run_cmd(f"apk info -e {safe_name}").returncode == 0
+    if PACKAGE_MANAGER == "pacman":
+        return run_cmd(f"pacman -Qi {safe_name} 2>/dev/null").returncode == 0
+    return shutil.which(package_name) is not None
 
 
 def is_service_active(service_name: str) -> bool:
-    return run_cmd(f"systemctl is-active {safe_shell_arg(service_name)}").stdout.strip() == "active"
+    safe_name = safe_shell_arg(service_name)
+    if SERVICE_MANAGER == "systemctl":
+        return run_cmd(f"systemctl is-active {safe_name}").stdout.strip() == "active"
+    if SERVICE_MANAGER == "service":
+        result = run_cmd(f"service {safe_name} status")
+        return result.returncode == 0 or "running" in result.stdout.lower()
+    return False
 
 
 def docker_installed() -> bool:
@@ -794,37 +1072,45 @@ async def service_page(request: Request, service_key: str):
         "ocserv_connections": get_ocserv_connected_users() if service_key == "ocserv" else []
     }
     context = create_translation_context(request, base_context)
-    return templates.TemplateResponse(request=request, name="service.html", context=context)
+    return templates.TemplateResponse("service.html", context=context)
 
 @app.post("/service/{service_key}/manage")
 async def manage_service(service_key: str, action: str = Form(...)):
     service = lookup_service(service_key)
     if not service:
         return RedirectResponse(url="/", status_code=303)
-    pkg = safe_shell_arg(service["package"])
-    svc = safe_shell_arg(service["service"])
+    pkg = service["package"]
+    svc = service["service"]
     if action == "install":
-        run_cmd(f"dnf install {pkg} -y")
+        pkg_install(pkg)
     elif action == "uninstall":
-        run_cmd(f"systemctl stop {svc} && dnf remove {pkg} -y")
+        run_service_command("stop", svc)
+        pkg_remove(pkg)
     elif action == "enable":
-        run_cmd(f"systemctl enable --now {svc}")
+        if SERVICE_MANAGER == "systemctl":
+            run_service_command("enable --now", svc)
     elif action == "disable":
-        run_cmd(f"systemctl disable --now {svc}")
+        if SERVICE_MANAGER == "systemctl":
+            run_service_command("disable --now", svc)
     elif action == "restart":
-        run_cmd(f"systemctl restart {svc}")
+        run_service_command("restart", svc)
     elif action == "start":
-        run_cmd(f"systemctl start {svc}")
+        run_service_command("start", svc)
     return RedirectResponse(url=f"/service/{service_key}", status_code=303)
 
 @app.post("/manage")
 async def manage_squid(action: str = Form(...)):
     if action == "install":
-        run_cmd("dnf install squid httpd-tools -y && mkdir -p /etc/squid && touch /etc/squid/passwd && systemctl enable --now squid")
+        pkg_install("squid")
+        pkg_install("httpd-tools")
+        os.makedirs("/etc/squid", exist_ok=True)
+        Path("/etc/squid/passwd").touch()
+        run_service_command("enable --now", "squid")
     elif action == "uninstall":
-        run_cmd("systemctl stop squid && dnf remove squid -y")
+        run_service_command("stop", "squid")
+        pkg_remove("squid")
     elif action in {"start", "stop", "restart"}:
-        run_cmd(f"systemctl {action} squid")
+        run_service_command(action, "squid")
     return RedirectResponse(url="/proxy", status_code=303)
 
 @app.post("/proxy-user")
@@ -836,7 +1122,7 @@ async def manage_user(action: str = Form(...), username: str = Form(...), passwo
         run_cmd(f"htpasswd -b {safe_file} {safe_user} {safe_pass}")
     else:
         run_cmd(f"htpasswd -D {safe_file} {safe_user}")
-    run_cmd("systemctl restart squid")
+    run_service_command("restart", "squid")
     return RedirectResponse(url="/proxy", status_code=303)
 
 @app.post("/ocserv-user")
@@ -846,11 +1132,11 @@ async def manage_ocserv_user(action: str = Form(...), username: str = Form(...),
             return RedirectResponse(url="/service/ocserv", status_code=303)
         success = create_ocserv_user(username, password)
         if success:
-            run_cmd("systemctl restart ocserv")  # Restart service to pick up changes
+            run_service_command("restart", "ocserv")  # Restart service to pick up changes
     elif action == "delete":
         success = delete_ocserv_user(username)
         if success:
-            run_cmd("systemctl restart ocserv")
+            run_service_command("restart", "ocserv")
     return RedirectResponse(url="/service/ocserv", status_code=303)
 
 
@@ -1350,7 +1636,7 @@ async def service_config(request: Request, service_key: str):
         "install_steps": install_steps
     }
     context = create_translation_context(request, base_context)
-    return templates.TemplateResponse(request=request, name="config.html", context=context)
+    return templates.TemplateResponse("config.html", context=context)
 
 @app.post("/service/{service_key}/config")
 async def save_service_config(service_key: str, config_content: str = Form(...)):
@@ -1371,7 +1657,7 @@ async def save_service_config(service_key: str, config_content: str = Form(...))
             # Restart service after config change
             service = lookup_service(service_key)
             if service:
-                run_cmd(f"systemctl restart {safe_shell_arg(service['service'])}")
+                run_service_command("restart", service['service'])
         except:
             pass
 
@@ -1380,7 +1666,17 @@ async def save_service_config(service_key: str, config_content: str = Form(...))
 @app.post("/manage-firewall")
 async def manage_fw(action: str = Form(...)):
     if action in {"start", "stop", "restart", "status"}:
-        run_cmd(f"systemctl {action} firewalld")
+        if FIREWALL_TOOL == "firewalld":
+            run_service_command(action, "firewalld")
+        elif FIREWALL_TOOL == "ufw":
+            if action == "start":
+                run_cmd("ufw enable")
+            elif action == "stop":
+                run_cmd("ufw disable")
+            elif action == "restart":
+                run_cmd("ufw reload")
+            elif action == "status":
+                run_cmd("ufw status")
     return RedirectResponse(url="/firewall", status_code=303)
 
 @app.post("/firewall-port")
@@ -1389,20 +1685,14 @@ async def manage_port(action: str = Form(...), port: str = Form(None)):
         p = port.strip()
         if p:
             p = p if "/" in p else f"{p}/tcp"
-            safe_port = safe_shell_arg(p)
-            run_cmd(f"firewall-cmd --{action}-port={safe_port} && firewall-cmd --permanent --{action}-port={safe_port} && firewall-cmd --reload")
+            firewall_modify_port(action if action in {"add","remove"} else action, p)
     return RedirectResponse(url="/firewall", status_code=303)
 
 
 @app.post("/firewall-zone")
 async def manage_firewall_zone(action: str = Form(...), zone: str = Form(...), interface: str = Form(...)):
     if zone and interface:
-        safe_zone = safe_shell_arg(zone)
-        safe_interface = safe_shell_arg(interface)
-        if action == "add":
-            run_cmd(f"firewall-cmd --permanent --zone={safe_zone} --add-interface={safe_interface} && firewall-cmd --reload")
-        elif action == "remove":
-            run_cmd(f"firewall-cmd --permanent --zone={safe_zone} --remove-interface={safe_interface} && firewall-cmd --reload")
+        firewall_modify_interface_zone(action, zone, interface)
     return RedirectResponse(url="/firewall", status_code=303)
 
 
@@ -1626,7 +1916,7 @@ async def get_noip_config_page(request: Request):
         "noip_config": noip_config
     })
     
-    return templates.TemplateResponse(request=request, name="noip.html", context=context)
+    return templates.TemplateResponse("noip.html", context=context)
 
 
 @app.post("/network-interfaces/noip/save")
@@ -1645,10 +1935,9 @@ async def save_noip_config(request: Request, enabled: str = Form(None), username
     if write_noip_config(noip_config):
         # If enabled, could start noip2 service here if installed
         if noip_config["enabled"]:
-            # Try to restart noip2 service if it exists
-            result = run_cmd("systemctl is-active noip2")
-            if result.returncode == 0:
-                run_cmd("systemctl restart noip2")
+                # Try to restart noip2 service if it exists
+                if is_service_active("noip2"):
+                    run_service_command("restart", "noip2")
         
         return RedirectResponse(url="/network-interfaces/noip/config?success=1", status_code=303)
     
@@ -1674,7 +1963,7 @@ async def system_page(request: Request):
     success = request.query_params.get("success")
     error = request.query_params.get("error")
     
-    return templates.TemplateResponse(request=request, name="system.html", context={
+    return templates.TemplateResponse("system.html", {
         "request": request,
         **get_stats(),
         "updates_available": status["updates_available"],
@@ -1693,7 +1982,10 @@ async def system_page(request: Request):
 async def reboot_system(request: Request):
     if not request.session.get("logged_in"):
         return RedirectResponse("/login")
-    run_cmd("systemctl reboot")
+    if SERVICE_MANAGER == "systemctl":
+        run_cmd("systemctl reboot")
+    else:
+        run_cmd("reboot")
     return RedirectResponse(url="/system", status_code=303)
 
 
@@ -1730,7 +2022,7 @@ async def change_language(request: Request, language: str = Form(...)):
 @app.post("/save-config")
 async def save_config(config_text: str = Form(...)):
     if os.path.exists("/etc/squid/squid.conf"):
-        Path("/etc/squid/squid.conf").write_text(config_text); run_cmd("systemctl restart squid")
+        Path("/etc/squid/squid.conf").write_text(config_text); run_service_command("restart", "squid")
     return RedirectResponse(url="/proxy", status_code=303)
 async def system_page(request: Request):
     if not request.session.get("logged_in"):
@@ -1749,7 +2041,7 @@ async def system_page(request: Request):
     success = request.query_params.get("success")
     error = request.query_params.get("error")
     
-    return templates.TemplateResponse(request=request, name="system.html", context={
+    return templates.TemplateResponse("system.html", {
         "request": request,
         **get_stats(),
         "updates_available": status["updates_available"],
@@ -1772,15 +2064,14 @@ async def search_packages_action(query: str = Form(...)):
 
 @app.post("/system/install-updates")
 async def install_updates():
-    run_cmd("dnf update -y")
+    update_system()
     return RedirectResponse(url="/system", status_code=303)
 
 
 @app.post("/system/install-package")
 async def install_package(package_name: str = Form(...)):
     if package_name.strip():
-        safe_pkg = safe_shell_arg(package_name)
-        result = run_cmd(f"dnf install {safe_pkg} -y")
+        result = pkg_install(package_name)
         if result.returncode == 0:
             return RedirectResponse(url="/system?success=package_installed", status_code=303)
         else:
@@ -1791,8 +2082,7 @@ async def install_package(package_name: str = Form(...)):
 @app.post("/system/remove-package")
 async def remove_package(package_name: str = Form(...)):
     if package_name.strip():
-        safe_pkg = safe_shell_arg(package_name)
-        result = run_cmd(f"dnf remove {safe_pkg} -y")
+        result = pkg_remove(package_name)
         if result.returncode == 0:
             return RedirectResponse(url="/system?success=package_removed", status_code=303)
         else:
@@ -1815,7 +2105,7 @@ async def admin_page(request: Request):
         "backup_count": len(backups)
     })
     
-    return templates.TemplateResponse(request=request, name="admin.html", context=context)
+    return templates.TemplateResponse("admin.html", context=context)
 
 
 @app.post("/admin/change-password")
