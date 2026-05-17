@@ -29,4 +29,39 @@
             <div class="actions"><button type="submit" name="action" value="add" class="button button-primary">{{ t(request, "firewall_add_port") }}</button><button type="submit" name="action" value="remove" class="button button-danger">{{ t(request, "btn_delete") }}</button></div>
         </form>
     </section>
+    <section class="card services-panel">
+        <div class="services-title">{{ t(request, "firewall_zones") }}</div>
+        <div class="card-copy">{{ t(request, "firewall_zones_help") }}</div>
+        <div class="service-list">
+            {% for zone in zones %}
+            <div class="service-card">
+                <strong>{{ zone }}:</strong>
+                {% if zone_interfaces[zone] %}
+                    {{ zone_interfaces[zone] | join(', ') }}
+                {% else %}
+                    {{ t(request, "firewall_no_interfaces") }}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <form action="/firewall-zone" method="post" class="form-grid">
+            <div class="field-group"><label>{{ t(request, "firewall_zone") }}</label>
+                <select name="zone" required>
+                    <option value="">-- {{ t(request, "select_option") }} --</option>
+                    {% for zone in zones %}
+                    <option value="{{ zone }}">{{ zone }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field-group"><label>{{ t(request, "firewall_interface") }}</label>
+                <select name="interface" required>
+                    <option value="">-- {{ t(request, "select_option") }} --</option>
+                    {% for iface in available_interfaces %}
+                    <option value="{{ iface }}">{{ iface }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="actions"><button type="submit" name="action" value="add" class="button button-primary">{{ t(request, "firewall_add_interface") }}</button><button type="submit" name="action" value="remove" class="button button-danger">{{ t(request, "firewall_remove_interface") }}</button></div>
+        </form>
+    </section>
 {% endblock %}

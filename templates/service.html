@@ -18,9 +18,20 @@
                     <button type="submit" class="button button-primary">{{ t(request, "btn_save") }}</button>
                 </form>
                 {% else %}
+                {% if not active %}
+                <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block; margin:0;">
+                    <input type="hidden" name="action" value="start">
+                    <button type="submit" class="button button-success">{{ t(request, "service_start") }}</button>
+                </form>
+                {% else %}
+                <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block; margin:0;">
+                    <input type="hidden" name="action" value="stop">
+                    <button type="submit" class="button button-danger">{{ t(request, "service_stop") }}</button>
+                </form>
+                {% endif %}
                 <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block; margin:0;">
                     <input type="hidden" name="action" value="restart">
-                    <button type="submit" class="button button-primary">{{ t(request, "btn_save") }}</button>
+                    <button type="submit" class="button button-primary">{{ t(request, "service_restart") }}</button>
                 </form>
                 <form action="/service/{{ service_key }}/manage" method="post" style="display:inline-block; margin:0;">
                     <input type="hidden" name="action" value="uninstall">

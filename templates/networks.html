@@ -32,6 +32,7 @@
 <div class="tabs">
     <button class="tab active" onclick="switchTab('services-tab')">{{ t(request, "tab_services") }}</button>
     <button class="tab" onclick="switchTab('interfaces-tab')">{{ t(request, "tab_interfaces") }}</button>
+    <button class="tab" onclick="switchTab('routing-tab')">{{ t(request, "tab_routing") }}</button>
     <button class="tab" onclick="switchTab('noip-tab')">{{ t(request, "tab_noip") }}</button>
 </div>
 
@@ -47,6 +48,23 @@
                 <span>{{ t(request, "dashboard_installed") }}: <strong>{{ t(request, "status_yes") if item.installed else t(request, "status_no") }}</strong></span>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:14px;">
+                {% if item.installed %}
+                    {% if item.active %}
+                        <form action="/service/{{ item.key }}/manage" method="post" style="display:inline-block; margin:0;">
+                            <input type="hidden" name="action" value="stop">
+                            <button type="submit" class="button button-danger">{{ t(request, "service_stop") }}</button>
+                        </form>
+                    {% else %}
+                        <form action="/service/{{ item.key }}/manage" method="post" style="display:inline-block; margin:0;">
+                            <input type="hidden" name="action" value="start">
+                            <button type="submit" class="button button-success">{{ t(request, "service_start") }}</button>
+                        </form>
+                    {% endif %}
+                    <form action="/service/{{ item.key }}/manage" method="post" style="display:inline-block; margin:0;">
+                        <input type="hidden" name="action" value="restart">
+                        <button type="submit" class="button button-primary">{{ t(request, "service_restart") }}</button>
+                    </form>
+                {% endif %}
                 <a href="/service/{{ item.key }}" class="button button-primary">{{ t(request, "btn_manage") }}</a>
                 <a href="/service/{{ item.key }}/config" class="button button-ghost">{{ t(request, "btn_config") }}</a>
             </div>
@@ -119,6 +137,37 @@
     <button onclick="applyAllInterfaces()" class="button button-success" style="margin-top: 20px;">{{ t(request, "btn_apply_config") }}</button>
 </div>
 
+<!-- Routing Tab -->
+<div id="routing-tab" class="tab-content">
+    <h3>{{ t(request, "routing_title") }}</h3>
+    <p>{{ t(request, "routing_description") }}</p>
+
+    <section class="card services-panel" style="margin-bottom: 20px;">
+        <div class="services-title">{{ t(request, "routing_current_routes") }}</div>
+        <div class="service-list" id="route-list">
+            <p>{{ t(request, "loading") }}</p>
+        </div>
+    </section>
+
+    <section class="card services-panel">
+        <div class="services-title">{{ t(request, "routing_title") }}</div>
+        <form id="add-route-form" onsubmit="addRoute(event)" class="form-grid">
+            <div class="field-group"><label>{{ t(request, "routing_destination") }}</label><input type="text" name="destination" placeholder="192.168.2.0/24 or default" required></div>
+            <div class="field-group"><label>{{ t(request, "routing_gateway") }}</label><input type="text" name="gateway" placeholder="192.168.1.1"></div>
+            <div class="field-group"><label>{{ t(request, "routing_interface") }}</label>
+                <select name="dev">
+                    <option value="">-- {{ t(request, "select_option") }} --</option>
+                    {% for iface in available_interfaces %}
+                    <option value="{{ iface }}">{{ iface }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field-group"><label>{{ t(request, "routing_metric") }}</label><input type="text" name="metric" placeholder="Optional metric"></div>
+            <button type="submit" class="button button-primary">{{ t(request, "routing_add_route") }}</button>
+        </form>
+    </section>
+</div>
+
 <!-- NoIP.com Tab -->
 <div id="noip-tab" class="tab-content">
     <h3>NoIP.com Dynamic DNS Client</h3>
@@ -160,6 +209,8 @@ function switchTab(tabId) {
     
     if (tabId === 'interfaces-tab') {
         loadInterfaces();
+    } else if (tabId === 'routing-tab') {
+        loadRoutes();
     } else if (tabId === 'noip-tab') {
         loadNoIPConfig();
     }
@@ -268,6 +319,72 @@ async function applyAllInterfaces() {
         }
     } catch (error) {
         alert('Error: ' + error);
+    }
+}
+
+async function loadRoutes() {
+    try {
+        const response = await fetch('/network/routes/api/list');
+        const data = await response.json();
+        displayRoutes(data.routes || []);
+    } catch (error) {
+        console.error('Error loading routes:', error);
+    }
+}
+
+function displayRoutes(routes) {
+    const container = document.getElementById('route-list');
+    if (!routes.length) {
+        container.innerHTML = '<p>{{ t(request, "routing_no_routes") }}</p>';
+        return;
+    }
+    container.innerHTML = routes.map(route => `
+        <div class="service-card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <span>${route}</span>
+            <button onclick="deleteRoute('${route.replace(/'/g, "\\'")}')" class="button button-danger btn-small">{{ t(request, "btn_delete") }}</button>
+        </div>
+    `).join('');
+}
+
+async function addRoute(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    try {
+        const response = await fetch('/network/routes/api/add', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            alert('{{ t(request, "routing_route_added") }}');
+            form.reset();
+            loadRoutes();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        alert('Error adding route: ' + error);
+    }
+}
+
+async function deleteRoute(route) {
+    if (!confirm('{{ t(request, "confirm_delete") }}')) return;
+    const formData = new FormData();
+    formData.append('route', route);
+    try {
+        const response = await fetch('/network/routes/api/delete', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            loadRoutes();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        alert('Error deleting route: ' + error);
     }
 }
 

@@ -16,6 +16,23 @@
                 <span>{{ t(request, "dashboard_installed") }}: <strong>{{ t(request, "service_installed") if item.installed else t(request, "service_not_installed") }}</strong></span>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap: 12px; margin-top: 14px;">
+                {% if item.installed %}
+                    {% if item.active %}
+                        <form action="/service/{{ item.key }}/manage" method="post" style="display:inline-block; margin:0;">
+                            <input type="hidden" name="action" value="stop">
+                            <button type="submit" class="button button-danger">{{ t(request, "vpn_stop") }}</button>
+                        </form>
+                    {% else %}
+                        <form action="/service/{{ item.key }}/manage" method="post" style="display:inline-block; margin:0;">
+                            <input type="hidden" name="action" value="start">
+                            <button type="submit" class="button button-success">{{ t(request, "vpn_start") }}</button>
+                        </form>
+                    {% endif %}
+                    <form action="/service/{{ item.key }}/manage" method="post" style="display:inline-block; margin:0;">
+                        <input type="hidden" name="action" value="restart">
+                        <button type="submit" class="button button-primary">{{ t(request, "vpn_restart") }}</button>
+                    </form>
+                {% endif %}
                 <a href="/service/{{ item.key }}" class="button button-primary">{{ t(request, "btn_manage") }}</a>
                 <a href="/service/{{ item.key }}/config" class="button button-ghost">{{ t(request, "btn_config") }}</a>
             </div>
