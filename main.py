@@ -4,8 +4,10 @@ import shutil
 import subprocess
 import json
 import gzip
+import ssl
+import socket
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
@@ -37,6 +39,12 @@ OCSERV_PASSWD_FILE = "/var/lib/ocserv/ocpasswd"
 BACKUP_DIR = "/var/backups/squid-panel"
 INTERFACES_CONFIG_FILE = "/etc/squid-panel/interfaces.json"
 NOIP_CONFIG_FILE = "/etc/squid-panel/noip.json"
+
+# SSL Certificate Paths
+SSL_DIR = "/etc/squid-panel/ssl"
+SSL_CERT_FILE = os.path.join(SSL_DIR, "alfacore.crt")
+SSL_KEY_FILE = os.path.join(SSL_DIR, "alfacore.key")
+SSL_CSR_FILE = os.path.join(SSL_DIR, "alfacore.csr")
 
 SERVICE_MAP = {
     "dhcp-server": {
@@ -265,6 +273,126 @@ def firewall_modify_interface_zone(action: str, zone: str, interface: str) -> su
             return run_cmd(f"firewall-cmd --permanent --zone={safe_zone} --remove-interface={safe_interface} && firewall-cmd --reload")
     # UFW doesn't expose zones in the same way; no-op for other backends
     return run_cmd("true")
+
+
+# SSL Certificate Functions
+def ensure_ssl_directory():
+    """Ensure SSL directory exists with proper permissions"""
+    try:
+        os.makedirs(SSL_DIR, mode=0o700, exist_ok=True)
+        run_cmd(f"chmod 700 {SSL_DIR}")
+        return True
+    except Exception as e:
+        print(f"Error creating SSL directory: {e}")
+        return False
+
+
+def ssl_certs_exist() -> bool:
+    """Check if SSL certificates already exist"""
+    return os.path.exists(SSL_CERT_FILE) and os.path.exists(SSL_KEY_FILE)
+
+
+def generate_self_signed_cert(hostname: str = None) -> bool:
+    """Generate a self-signed certificate for local use"""
+    if hostname is None:
+        hostname = socket.gethostname()
+    
+    try:
+        ensure_ssl_directory()
+        
+        # Generate private key
+        key_cmd = f"openssl genrsa -out {SSL_KEY_FILE} 2048"
+        result = run_cmd(key_cmd)
+        if result.returncode != 0:
+            return False
+        
+        run_cmd(f"chmod 600 {SSL_KEY_FILE}")
+        
+        # Generate CSR (Certificate Signing Request)
+        csr_cmd = f"openssl req -new -key {SSL_KEY_FILE} -out {SSL_CSR_FILE} -subj '/CN={hostname}'"
+        result = run_cmd(csr_cmd)
+        if result.returncode != 0:
+            return False
+        
+        # Generate self-signed certificate (valid for 365 days)
+        cert_cmd = f"openssl x509 -req -days 365 -in {SSL_CSR_FILE} -signkey {SSL_KEY_FILE} -out {SSL_CERT_FILE}"
+        result = run_cmd(cert_cmd)
+        if result.returncode != 0:
+            return False
+        
+        run_cmd(f"chmod 644 {SSL_CERT_FILE}")
+        
+        # Clean up CSR
+        if os.path.exists(SSL_CSR_FILE):
+            os.remove(SSL_CSR_FILE)
+        
+        return True
+    except Exception as e:
+        print(f"Error generating self-signed certificate: {e}")
+        return False
+
+
+def install_local_ca_cert() -> dict:
+    """Install local CA certificate for client systems"""
+    if not ssl_certs_exist():
+        return {"success": False, "message": "SSL certificates not found. Generate them first."}
+    
+    try:
+        results = {}
+        
+        # CentOS/RHEL/Fedora
+        if os.path.exists("/etc/pki/ca-trust/source/anchors"):
+            cert_path = "/etc/pki/ca-trust/source/anchors/alfacore.crt"
+            run_cmd(f"cp {SSL_CERT_FILE} {cert_path}")
+            run_cmd("update-ca-trust")
+            results["rhel"] = "Certificate installed for RHEL/CentOS/Fedora"
+        
+        # Debian/Ubuntu
+        if os.path.exists("/usr/local/share/ca-certificates"):
+            cert_path = "/usr/local/share/ca-certificates/alfacore.crt"
+            run_cmd(f"cp {SSL_CERT_FILE} {cert_path}")
+            run_cmd("update-ca-certificates")
+            results["debian"] = "Certificate installed for Debian/Ubuntu"
+        
+        # Alpine
+        if os.path.exists("/usr/local/share/ca-certificates"):
+            cert_path = "/usr/local/share/ca-certificates/alfacore.crt"
+            run_cmd(f"cp {SSL_CERT_FILE} {cert_path}")
+            run_cmd("update-ca-certificates")
+            results["alpine"] = "Certificate installed for Alpine"
+        
+        return {"success": True, "message": "Local CA certificate installed", "details": results}
+    except Exception as e:
+        return {"success": False, "message": f"Error installing certificate: {e}"}
+
+
+def get_cert_info() -> dict:
+    """Get information about the current SSL certificate"""
+    if not ssl_certs_exist():
+        return {"exists": False, "message": "No SSL certificate found"}
+    
+    try:
+        result = run_cmd(f"openssl x509 -in {SSL_CERT_FILE} -text -noout")
+        if result.returncode != 0:
+            return {"exists": False, "message": "Error reading certificate"}
+        
+        # Extract key info
+        lines = result.stdout.split('\n')
+        info = {"exists": True}
+        
+        for line in lines:
+            if 'Subject:' in line:
+                info['subject'] = line.strip()
+            elif 'Issuer:' in line:
+                info['issuer'] = line.strip()
+            elif 'Not Before:' in line:
+                info['valid_from'] = line.split('Not Before: ')[1] if 'Not Before: ' in line else ''
+            elif 'Not After' in line:
+                info['valid_until'] = line.split('Not After : ')[1] if 'Not After : ' in line else ''
+        
+        return info
+    except Exception as e:
+        return {"exists": True, "message": f"Error reading certificate: {e}"}
 
 
 def get_stats():
@@ -2163,3 +2291,60 @@ async def download_backup(backup_name: str, request: Request):
         return FileResponse(backup_path, filename=backup_name, media_type="application/gzip")
     
     return RedirectResponse("/admin", status_code=303)
+
+
+# SSL Certificate Management Routes
+@app.get("/admin/certificates")
+async def certificates_page(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    
+    cert_info = get_cert_info()
+    context = create_translation_context(request, {
+        "request": request,
+        "cert_info": cert_info,
+        "ssl_dir": SSL_DIR
+    })
+    
+    return templates.TemplateResponse("certificates.html", context=context)
+
+
+@app.post("/admin/certificates/generate")
+async def generate_certificate(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    
+    hostname = None
+    try:
+        form_data = await request.form()
+        hostname = form_data.get("hostname", socket.gethostname())
+    except:
+        hostname = socket.gethostname()
+    
+    if generate_self_signed_cert(hostname):
+        return RedirectResponse("/admin/certificates?success=cert_generated", status_code=303)
+    else:
+        return RedirectResponse("/admin/certificates?error=cert_generation_failed", status_code=303)
+
+
+@app.post("/admin/certificates/install-ca")
+async def install_ca_certificate(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    
+    result = install_local_ca_cert()
+    if result["success"]:
+        return RedirectResponse("/admin/certificates?success=ca_installed", status_code=303)
+    else:
+        return RedirectResponse("/admin/certificates?error=ca_installation_failed", status_code=303)
+
+
+@app.get("/admin/certificates/download")
+async def download_certificate(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    
+    if not ssl_certs_exist():
+        return RedirectResponse("/admin/certificates?error=cert_not_found", status_code=303)
+    
+    return FileResponse(SSL_CERT_FILE, filename="alfacore.crt", media_type="application/x-x509-ca-cert")
