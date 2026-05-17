@@ -75,6 +75,12 @@ SERVICE_MAP = {
         "service": "openvpn",
         "description": "Manage generic VPN client/server tunnels for remote access."
     },
+    "docker": {
+        "label": "Docker",
+        "package": "docker",
+        "service": "docker",
+        "description": "Manage Docker daemon and container workloads."
+    },
     "ocserv": {
         "label": "OCSERV",
         "package": "ocserv",
@@ -510,7 +516,20 @@ async def firewall_page(request: Request):
     if not request.session.get("logged_in"):
         return RedirectResponse("/login")
     ports = run_cmd("firewall-cmd --list-ports").stdout.strip()
-    context = create_translation_context(request, {"request": request, **get_stats(), "open_ports": ports.split()})
+    zones = run_cmd("firewall-cmd --get-zones").stdout.strip().split()
+    zone_interfaces = {}
+    for zone in zones:
+        result = run_cmd(f"firewall-cmd --zone={safe_shell_arg(zone)} --list-interfaces")
+        zone_interfaces[zone] = result.stdout.strip().split() if result.returncode == 0 else []
+    available_interfaces = get_system_interfaces()
+    context = create_translation_context(request, {
+        "request": request,
+        **get_stats(),
+        "open_ports": ports.split(),
+        "zones": zones,
+        "zone_interfaces": zone_interfaces,
+        "available_interfaces": available_interfaces
+    })
     return templates.TemplateResponse(request=request, name="firewall.html", context=context)
 
 @app.get("/logs")
@@ -542,11 +561,13 @@ async def networks_page(request: Request):
             "active": active,
         })
     noip_config = read_noip_config()
+    available_interfaces = get_system_interfaces()
     context = create_translation_context(request, {
         "request": request, 
         **get_stats(), 
         "services": services,
-        "noip_config": noip_config
+        "noip_config": noip_config,
+        "available_interfaces": available_interfaces
     })
     return templates.TemplateResponse(request=request, name="networks.html", context=context)
 
@@ -574,6 +595,42 @@ async def vpns_page(request: Request):
     return templates.TemplateResponse(request=request, name="vpns.html", context=context)
 
 
+@app.get("/docker")
+async def docker_page(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    installed = docker_installed()
+    active = is_service_active("docker") if installed else False
+    containers = get_docker_containers() if installed else []
+    context = create_translation_context(request, {
+        "request": request,
+        **get_stats(),
+        "installed": installed,
+        "active": active,
+        "containers": containers
+    })
+    return templates.TemplateResponse(request=request, name="docker.html", context=context)
+
+
+@app.post("/docker/manage")
+async def manage_docker(request: Request, action: str = Form(...)):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    if action in {"start", "stop", "restart"}:
+        run_cmd(f"systemctl {action} docker")
+    return RedirectResponse(url="/docker", status_code=303)
+
+
+@app.post("/docker/container/manage")
+async def manage_docker_container(request: Request, action: str = Form(...), container: str = Form(...)):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    safe_container = safe_shell_arg(container)
+    if action in {"start", "stop", "restart", "rm"}:
+        run_cmd(f"docker {action} {safe_container}")
+    return RedirectResponse(url="/docker", status_code=303)
+
+
 def lookup_service(service_key: str):
     return SERVICE_MAP.get(service_key)
 
@@ -584,6 +641,36 @@ def is_package_installed(package_name: str) -> bool:
 
 def is_service_active(service_name: str) -> bool:
     return run_cmd(f"systemctl is-active {safe_shell_arg(service_name)}").stdout.strip() == "active"
+
+
+def docker_installed() -> bool:
+    """Check whether Docker is available on the host."""
+    return shutil.which("docker") is not None or is_package_installed("docker")
+
+
+def get_docker_containers() -> list:
+    """Get Docker containers with minimal metadata."""
+    containers = []
+    if not docker_installed():
+        return containers
+
+    result = run_cmd('docker ps -a --format "{{.ID}}|{{.Image}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Ports}}"')
+    if result.returncode != 0:
+        return containers
+
+    for line in result.stdout.strip().splitlines():
+        if not line:
+            continue
+        parts = line.split("|")
+        containers.append({
+            "id": parts[0] if len(parts) > 0 else "",
+            "image": parts[1] if len(parts) > 1 else "",
+            "name": parts[2] if len(parts) > 2 else "",
+            "status": parts[3] if len(parts) > 3 else "",
+            "state": parts[4] if len(parts) > 4 else "",
+            "ports": parts[5] if len(parts) > 5 else ""
+        })
+    return containers
 
 
 def get_ocserv_users() -> list:
@@ -1307,6 +1394,18 @@ async def manage_port(action: str = Form(...), port: str = Form(None)):
     return RedirectResponse(url="/firewall", status_code=303)
 
 
+@app.post("/firewall-zone")
+async def manage_firewall_zone(action: str = Form(...), zone: str = Form(...), interface: str = Form(...)):
+    if zone and interface:
+        safe_zone = safe_shell_arg(zone)
+        safe_interface = safe_shell_arg(interface)
+        if action == "add":
+            run_cmd(f"firewall-cmd --permanent --zone={safe_zone} --add-interface={safe_interface} && firewall-cmd --reload")
+        elif action == "remove":
+            run_cmd(f"firewall-cmd --permanent --zone={safe_zone} --remove-interface={safe_interface} && firewall-cmd --reload")
+    return RedirectResponse(url="/firewall", status_code=303)
+
+
 # Network Interfaces API Routes
 @app.get("/network-interfaces/api/list")
 async def list_interfaces(request: Request):
@@ -1469,6 +1568,50 @@ async def apply_all_interfaces(request: Request):
     return {"success": True, "results": results}
 
 
+# Routing Management API Routes
+@app.get("/network/routes/api/list")
+async def list_routes(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    routes = []
+    result = run_cmd("ip route show")
+    if result.returncode == 0:
+        routes = [line.strip() for line in result.stdout.strip().splitlines() if line.strip()]
+    return {"routes": routes}
+
+@app.post("/network/routes/api/add")
+async def add_route(request: Request, destination: str = Form(...), gateway: str = Form(None), dev: str = Form(None), metric: str = Form(None)):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    destination = destination.strip()
+    if not destination:
+        return {"success": False, "message": "Destination is required"}
+    args = ["ip", "route", "add", destination]
+    if gateway and gateway.strip():
+        args += ["via", gateway.strip()]
+    if dev and dev.strip():
+        args += ["dev", dev.strip()]
+    if metric and metric.strip():
+        args += ["metric", metric.strip()]
+    result = run_cmd_input(args, input_text="")
+    if result.returncode == 0:
+        return {"success": True, "message": "Route added successfully"}
+    return {"success": False, "message": result.stderr.strip()}
+
+@app.post("/network/routes/api/delete")
+async def delete_route(request: Request, route: str = Form(...)):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    route = route.strip()
+    if not route:
+        return {"success": False, "message": "Route is required"}
+    args = ["ip", "route", "del"] + route.split()
+    result = run_cmd_input(args, input_text="")
+    if result.returncode == 0:
+        return {"success": True, "message": "Route deleted successfully"}
+    return {"success": False, "message": result.stderr.strip()}
+
+
 # NoIP.com Client Configuration Routes
 @app.get("/network-interfaces/noip/config")
 async def get_noip_config_page(request: Request):
@@ -1544,6 +1687,14 @@ async def system_page(request: Request):
         "success": success,
         "error": error
     })
+
+
+@app.post("/system/reboot")
+async def reboot_system(request: Request):
+    if not request.session.get("logged_in"):
+        return RedirectResponse("/login")
+    run_cmd("systemctl reboot")
+    return RedirectResponse(url="/system", status_code=303)
 
 
 @app.post("/admin/delete-backup")
